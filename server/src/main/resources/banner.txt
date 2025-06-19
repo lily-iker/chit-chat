@@ -1,0 +1,11 @@
+${AnsiColor.MAGENTA} ▄████████    ▄█    █▄     ▄█      ███       ${AnsiColor.RED}    ▄████████    ▄█    █▄       ▄████████     ███
+${AnsiColor.MAGENTA}███    ███   ███    ███   ███  ▀█████████▄   ${AnsiColor.RED}   ███    ███   ███    ███     ███    ███ ▀█████████▄
+${AnsiColor.MAGENTA}███    █▀    ███    ███   ███▌    ▀███▀▀██   ${AnsiColor.RED}   ███    █▀    ███    ███     ███    ███    ▀███▀▀██
+${AnsiColor.MAGENTA}███         ▄███▄▄▄▄███▄▄ ███▌     ███   ▀   ${AnsiColor.RED}   ███         ▄███▄▄▄▄███▄▄   ███    ███     ███   ▀
+${AnsiColor.MAGENTA}███        ▀▀███▀▀▀▀███▀  ███▌     ███       ${AnsiColor.RED}   ███        ▀▀███▀▀▀▀███▀  ▀███████████     ███
+${AnsiColor.MAGENTA}███    █▄    ███    ███   ███      ███       ${AnsiColor.RED}   ███    █▄    ███    ███     ███    ███     ███
+${AnsiColor.MAGENTA}███    ███   ███    ███   ███      ███       ${AnsiColor.RED}   ███    ███   ███    ███     ███    ███     ███
+${AnsiColor.MAGENTA}████████▀    ███    █▀    █▀      ▄████▀     ${AnsiColor.RED}   ████████▀    ███    █▀      ███    █▀     ▄████▀
+
+${AnsiColor.BRIGHT_GREEN}Powered by Spring Boot (${spring-boot.version})
+${AnsiColor.DEFAULT}
