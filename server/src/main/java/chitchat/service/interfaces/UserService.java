@@ -8,7 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
     CustomUserDetails getCurrentUser();
-    UserInfoResponse setUpMyBasicInfo(UserInfoRequest userInfoRequest, MultipartFile profileImageFile);
+    UserInfoResponse setUpMyBasicInfo(UserInfoRequest userInfoRequest, MultipartFile profileImageFile) throws Exception;
     UserInfoResponse getMyInfo();
     PageResponse<?> searchUsers(String query, int pageNumber, int pageSize, String sortBy, String sortDirection);
 }

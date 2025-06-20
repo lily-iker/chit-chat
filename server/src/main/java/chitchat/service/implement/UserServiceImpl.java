@@ -5,11 +5,13 @@ import chitchat.dto.response.PageResponse;
 import chitchat.dto.response.user.UserInfoResponse;
 import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.exception.AuthenticationException;
+import chitchat.mapper.UserMapper;
 import chitchat.model.User;
 import chitchat.model.enumeration.RelationshipStatus;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.UserNodeRepository;
 import chitchat.repository.UserRepository;
+import chitchat.service.MinioService;
 import chitchat.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +32,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserNodeRepository userNodeRepository;
+    private final UserMapper userMapper;
+    private final MinioService minioService;
 
     @Override
     public CustomUserDetails getCurrentUser() {
@@ -44,7 +48,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserInfoResponse setUpMyBasicInfo(UserInfoRequest userInfoRequest, MultipartFile profileImageFile) {
+    public UserInfoResponse setUpMyBasicInfo(UserInfoRequest userInfoRequest, MultipartFile profileImageFile) throws Exception {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         CustomUserDetails userDetails = (CustomUserDetails) securityContext.getAuthentication().getPrincipal();
 
@@ -53,23 +57,13 @@ public class UserServiceImpl implements UserService {
         user.setFullName(userInfoRequest.getFullName());
         user.setBio(userInfoRequest.getBio());
 
-        // TODO: upload image then set the image URL
+        String profileImageUrl = minioService.uploadFileToPublicBucket(profileImageFile);
+        user.setProfileImageUrl(profileImageUrl);
 
         user.setProfileCompleted(true);
         userRepository.save(user);
 
-        // TODO: return the image URL and fullName in user in the response
-        return UserInfoResponse.builder()
-                .id(userDetails.getUser().getId())
-                .fullName(userDetails.getUser().getFullName())
-                .profileImageUrl(userDetails.getUser().getProfileImageUrl())
-                .bio(userDetails.getUser().getBio())
-                .email(userDetails.getUser().getEmail())
-                .username(userDetails.getUser().getUsername())
-                .emailVerified(userDetails.getUser().getEmailVerified())
-                .profileCompleted(userDetails.getUser().getProfileCompleted())
-                .role(userDetails.getUser().getRole())
-                .build();
+        return userMapper.toUserInfoResponse(user);
     }
 
     @Override
@@ -77,17 +71,7 @@ public class UserServiceImpl implements UserService {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         CustomUserDetails userDetails = (CustomUserDetails) securityContext.getAuthentication().getPrincipal();
 
-        return UserInfoResponse.builder()
-                .id(userDetails.getUser().getId())
-                .fullName(userDetails.getUser().getFullName())
-                .profileImageUrl(userDetails.getUser().getProfileImageUrl())
-                .bio(userDetails.getUser().getBio())
-                .email(userDetails.getUser().getEmail())
-                .username(userDetails.getUser().getUsername())
-                .emailVerified(userDetails.getUser().getEmailVerified())
-                .profileCompleted(userDetails.getUser().getProfileCompleted())
-                .role(userDetails.getUser().getRole())
-                .build();
+        return userMapper.toUserInfoResponse(userDetails.getUser());
     }
 
     @Override

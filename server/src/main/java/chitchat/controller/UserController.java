@@ -16,8 +16,10 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/setup-basic-info")
-    public ResponseEntity<?> setUpMyBasicInfo(@RequestPart UserInfoRequest userInfoRequest,
-                                              @RequestPart(value = "profileImageFile", required = false) MultipartFile profileImageFile) {
+    public ResponseEntity<?> setUpMyBasicInfo(
+            @RequestPart UserInfoRequest userInfoRequest,
+            @RequestPart(value = "profileImageFile", required = false) MultipartFile profileImageFile)
+            throws Exception {
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
                         "User info updated successfully",

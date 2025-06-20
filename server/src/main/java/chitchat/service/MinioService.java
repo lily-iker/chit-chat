@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -76,23 +78,36 @@ public class MinioService {
                 """.formatted(bucketName);
     }
 
-    public void uploadFileToPublicBucket(MultipartFile file) throws Exception {
-        uploadFile(file, publicBucket);
+    public String uploadFileToPublicBucket(MultipartFile file) throws Exception {
+        return uploadFile(file, publicBucket);
     }
 
-    public void uploadFileToPrivateBucket(MultipartFile file) throws Exception {
-        uploadFile(file, privateBucket);
+    public String uploadFileToPrivateBucket(MultipartFile file) throws Exception {
+        return uploadFile(file, privateBucket);
     }
 
-    private void uploadFile(MultipartFile file, String bucketName) throws Exception {
+    private String uploadFile(MultipartFile file, String bucketName) throws Exception {
+        String randomFileName = UUID.randomUUID().toString() + getFileExtension(Objects.requireNonNull(file.getOriginalFilename()));
+
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucketName)
-                        .object(file.getOriginalFilename())
+                        .object(randomFileName)
                         .stream(file.getInputStream(), file.getSize(), -1)
                         .contentType(file.getContentType())
                         .build()
         );
+
+        return getPresignedUrl(randomFileName, bucketName);
+    }
+
+
+    private String getFileExtension(String originalFileName) {
+        int lastDotIndex = originalFileName.lastIndexOf(".");
+        if (lastDotIndex > 0) {
+            return originalFileName.substring(lastDotIndex); // e.g., ".jpg", ".png"
+        }
+        return ""; // Return empty string if no extension is found
     }
 
     public String getPresignedUrlForPublicBucket(String fileName) throws Exception {
