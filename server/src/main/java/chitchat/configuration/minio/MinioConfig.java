@@ -17,8 +17,11 @@ public class MinioConfig {
     @Value("${minio.secretKey}")
     private String secretKey;
 
-    @Value("${minio.bucket}")
-    private String bucketName;
+    @Value("${minio.publicBucket}")
+    private String publicBucket;
+
+    @Value("${minio.privateBucket}")
+    private String privateBucket;
 
     @Bean
     public MinioClient minioClient() {
@@ -29,7 +32,12 @@ public class MinioConfig {
     }
 
     @Bean
-    public String bucketName() {
-        return bucketName;
+    public String publicBucket() {
+        return publicBucket;
+    }
+
+    @Bean
+    public String privateBucket() {
+        return privateBucket;
     }
 }
