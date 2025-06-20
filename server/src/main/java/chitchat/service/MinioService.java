@@ -87,7 +87,7 @@ public class MinioService {
     }
 
     private String uploadFile(MultipartFile file, String bucketName) throws Exception {
-        String randomFileName = UUID.randomUUID().toString() + getFileExtension(Objects.requireNonNull(file.getOriginalFilename()));
+        String randomFileName = UUID.randomUUID() + getFileExtension(Objects.requireNonNull(file.getOriginalFilename()));
 
         minioClient.putObject(
                 PutObjectArgs.builder()
@@ -98,9 +98,8 @@ public class MinioService {
                         .build()
         );
 
-        return getPresignedUrl(randomFileName, bucketName);
+        return bucketName + "/" + randomFileName;
     }
-
 
     private String getFileExtension(String originalFileName) {
         int lastDotIndex = originalFileName.lastIndexOf(".");
