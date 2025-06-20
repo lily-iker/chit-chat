@@ -1,17 +1,27 @@
-version: '3.8'
-
 services:
   neo4j:
     image: neo4j
     container_name: neo4j
     restart: unless-stopped
     ports:
-      - "7474:7474"  # HTTP UI
-      - "7687:7687"  # Bolt protocol
+      - '7474:7474' # HTTP UI
+      - '7687:7687' # Bolt protocol
     environment:
-      - NEO4J_AUTH=neo4j/password
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
     volumes:
-      - neo4j_data:/data  # optional: persist data
+      - neo4j_data:/data
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    ports:
+      - '9000:9000'
+    volumes:
+      - minio_data:/data
+    command: server /data
 
 volumes:
   neo4j_data:
+  minio_data:

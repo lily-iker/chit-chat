@@ -1,4 +1,4 @@
-package chitchat.configuration;
+package chitchat.configuration.mongo;
 
 
 import org.springframework.context.annotation.Configuration;

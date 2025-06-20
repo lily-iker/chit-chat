@@ -4,10 +4,10 @@ spring:
       uri: mongodb://localhost:27017/chitchat
       database: chitchat
   neo4j:
-    uri: neo4j://localhost:7687
+    uri: ${NEO4J_URI}
     authentication:
-      username: neo4j
-      password: password
+      username: ${NEO4J_USERNAME}
+      password: ${NEO4J_PASSWORD}
   output:
     ansi:
       enabled: ALWAYS
@@ -24,3 +24,9 @@ jwt:
   refreshExpiryTime: ${JWT_REFRESH_EXPIRY_TIME}
   secretKey: ${JWT_SECRET_KEY}
   refreshKey: ${JWT_REFRESH_KEY}
+
+minio:
+  url: ${MINIO_URL}
+  accessKey: ${MINIO_ROOT_USER}
+  secretKey: ${MINIO_ROOT_PASSWORD}
+  bucket: ${MINIO_BUCKET}
