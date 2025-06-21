@@ -36,7 +36,7 @@ function App() {
 
   // Connect to WebSocket if the user is authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && isProfileCompleted) {
       connect()
     } else {
       disconnect()
@@ -45,7 +45,7 @@ function App() {
     return () => {
       disconnect()
     }
-  }, [isAuthenticated, connect, disconnect])
+  }, [isAuthenticated, isProfileCompleted, connect, disconnect])
 
   if (isLoading) {
     return <Loading />
@@ -60,6 +60,16 @@ function App() {
             element={
               isAuthenticated && isProfileCompleted ? (
                 <HomePage />
+              ) : (
+                <Navigate to={!isAuthenticated ? '/login' : '/setup-info'} />
+              )
+            }
+          />
+          <Route
+            path="/update-profile"
+            element={
+              isAuthenticated && isProfileCompleted ? (
+                <SetupBasicInfoPage />
               ) : (
                 <Navigate to={!isAuthenticated ? '/login' : '/setup-info'} />
               )

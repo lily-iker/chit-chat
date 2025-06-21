@@ -1,159 +1,146 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/useAuthStore'
-import { ShipWheelIcon } from 'lucide-react'
-import { LoaderIcon } from 'react-hot-toast'
+import { ShipWheelIcon, CameraIcon, LoaderIcon, Pencil, X } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 const SetupBasicInfoPage = () => {
   const { authUser, setupBasicInfo, isLoading } = useAuthStore()
+
   const [fullName, setFullName] = useState(authUser?.fullName || '')
   const [bio, setBio] = useState(authUser?.bio || '')
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState(authUser?.profileImageUrl || '')
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setProfileImageFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    setupBasicInfo(fullName, bio)
+    if (!fullName.trim()) return toast.error('Full name is required')
+    if (fullName.trim().length < 3) return toast.error('Full name must be at least 3 characters')
+    await setupBasicInfo(fullName, bio, profileImageFile || undefined)
   }
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
-      <div className="card bg-base-200 w-full max-w-3xl shadow-xl">
-        <div className="card-body p-6 sm:p-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6">Complete Your Profile</h1>
+    <div className="min-h-screen bg-base-100 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-2xl bg-base-200 shadow-xl rounded-2xl p-6 sm:p-10">
+        <h1 className="text-3xl font-bold text-center mb-8">Update Your Profile</h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* PROFILE PIC CONTAINER */}
-            <div className="flex flex-col items-center justify-center space-y-4">
-              {/* IMAGE PREVIEW
-              <div className="size-32 rounded-full bg-base-300 overflow-hidden">
-                {profilePic ? (
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-32 h-32">
+              <div
+                onClick={() => previewUrl && setIsPreviewOpen(true)}
+                className="w-full h-full rounded-full overflow-hidden bg-base-300 shadow-md cursor-pointer hover:opacity-80 transition"
+              >
+                {previewUrl ? (
                   <img
-                    src={profilePic}
+                    src={previewUrl}
                     alt="Profile Preview"
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <CameraIcon className="size-12 text-base-content opacity-40" />
+                  <div className="w-full h-full flex items-center justify-center text-base-content/50">
+                    <CameraIcon className="w-10 h-10" />
                   </div>
                 )}
-              </div> */}
+              </div>
 
-              {/* Generate Random Avatar BTN */}
-              {/* <div className="flex items-center gap-2">
-                <button type="button" onClick={handleRandomAvatar} className="btn btn-accent">
-                  <ShuffleIcon className="size-4 mr-2" />
-                  Generate Random Avatar
-                </button>
-              </div> */}
-            </div>
+              <button
+                type="button"
+                onClick={() => document.getElementById('profileImageInput')?.click()}
+                className="absolute bottom-1 right-1 bg-base-100 p-1.5 rounded-full shadow-lg hover:bg-base-200 transition"
+              >
+                <Pencil className="w-4 h-4 text-base-content" />
+              </button>
 
-            {/* FULL NAME */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Full Name</span>
-              </label>
               <input
-                type="text"
-                name="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="input input-bordered w-full"
-                placeholder="Your full name"
+                id="profileImageInput"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
               />
             </div>
 
-            {/* BIO */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Bio</span>
-              </label>
-              <textarea
-                name="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                className="textarea textarea-bordered h-24"
-                placeholder="Tell others about yourself and your language learning goals"
-              />
-            </div>
-
-            {/* LANGUAGES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* NATIVE LANGUAGE */}
-              {/* <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Native Language</span>
-                </label>
-                <select
-                  name="nativeLanguage"
-                  value={nativeLanguage}
-                  onChange={(e) => setFormState({ ... nativeLanguage: e.target.value })}
-                  className="select select-bordered w-full"
+            {/* Modal for image preview */}
+            {isPreviewOpen && previewUrl && (
+              <div
+                className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                onClick={() => setIsPreviewOpen(false)}
+              >
+                <div
+                  className="relative bg-base-100 rounded-lg shadow-xl max-w-sm w-full"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <option value="">Select your native language</option>
-                  {LANGUAGES.map((lang) => (
-                    <option key={`native-${lang}`} value={lang.toLowerCase()}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </div> */}
+                  <button
+                    onClick={() => setIsPreviewOpen(false)}
+                    className="absolute top-2 right-2 bg-base-200 hover:bg-error text-base-content hover:text-white p-1.5 rounded-full shadow transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <img src={previewUrl} alt="Full Size Preview" className="w-full h-auto rounded" />
+                </div>
+              </div>
+            )}
+          </div>
 
-              {/* LEARNING LANGUAGE */}
-              {/* <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Learning Language</span>
-                </label>
-                <select
-                  name="learningLanguage"
-                  value={learningLanguage}
-                  onChange={(e) => setFormState({ ... learningLanguage: e.target.value })}
-                  className="select select-bordered w-full"
-                >
-                  <option value="">Select language you're learning</option>
-                  {LANGUAGES.map((lang) => (
-                    <option key={`learning-${lang}`} value={lang.toLowerCase()}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </div> */}
-            </div>
+          {/* Full name input */}
+          <div className="form-control">
+            <label className="label font-medium">
+              <span className="label-text">Full Name</span>
+            </label>
+            <input
+              type="text"
+              name="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="input input-bordered w-full mt-2"
+              placeholder="Your full name"
+            />
+          </div>
 
-            {/* LOCATION */}
-            <div className="form-control">
-              {/* <label className="label">
-                <span className="label-text">Location</span>
-              </label>
-              <div className="relative">
-                <MapPinIcon className="absolute top-1/2 transform -translate-y-1/2 left-3 size-5 text-base-content opacity-70" />
-                <input
-                  type="text"
-                  name="location"
-                  value={location}
-                  onChange={(e) => setFormState({ ... location: e.target.value })}
-                  className="input input-bordered w-full pl-10"
-                  placeholder="City, Country"
-                />
-              </div> */}
-            </div>
+          {/* Bio textarea */}
+          <div className="form-control">
+            <label className="label font-medium">
+              <span className="label-text">Bio</span>
+            </label>
+            <textarea
+              name="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              className="textarea textarea-bordered w-full h-28 mt-2"
+              placeholder="Tell others about yourself and your language learning goals"
+            />
+          </div>
 
-            {/* SUBMIT BUTTON */}
-
-            <button className="btn btn-primary w-full" disabled={isLoading} type="submit">
-              {!isLoading ? (
-                <>
-                  <ShipWheelIcon className="size-5 mr-2" />
-                  Complete Onboarding
-                </>
-              ) : (
-                <>
-                  <LoaderIcon className="animate-spin size-5 mr-2" />
-                  Onboarding...
-                </>
-              )}
-            </button>
-          </form>
-        </div>
+          {/* Submit button */}
+          <button className="btn btn-primary w-full gap-2" disabled={isLoading} type="submit">
+            {!isLoading ? (
+              <>
+                <ShipWheelIcon className="size-5" />
+                Save
+              </>
+            ) : (
+              <>
+                <LoaderIcon className="animate-spin size-5" />
+                Please wait a moment...
+              </>
+            )}
+          </button>
+        </form>
       </div>
     </div>
   )

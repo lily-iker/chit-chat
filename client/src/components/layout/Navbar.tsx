@@ -4,7 +4,6 @@ import { useAuthStore } from '@/store/useAuthStore'
 import ThemeSelector from '../theme/theme-selector'
 import UserProfile from '../user/user-profile'
 import FriendButton from '../user/friend-button'
-import LogoutButton from '../user/logout-button'
 
 const Navbar = () => {
   const { authUser } = useAuthStore()
@@ -31,7 +30,6 @@ const Navbar = () => {
 
             {authUser && (
               <>
-                <LogoutButton />
                 <UserProfile />
                 <FriendButton />
                 {/* Todo: add notification button */}
