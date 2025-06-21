@@ -17,7 +17,7 @@ const HomePage = () => {
   return (
     <div className="h-full bg-base-200">
       <div className="flex items-center justify-center lg:pt-8">
-        <div className="bg-base-100 rounded-lg shadow-cl w-full max-w-7xl h-[calc(100vh-8rem)]">
+        <div className="bg-base-100 rounded-lg shadow-cl w-full max-w-7xl h-[calc(100vh-4rem)] lg:h-[calc(100vh-8rem)]">
           <div className="flex h-full rounded-lg overflow-hidden">
             {/* Sidebar: always on lg+, mobile fallback handled below */}
             {!isMobile && (

@@ -34,7 +34,7 @@ const SetupBasicInfoPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-center justify-center px-4 py-10">
+    <div className="bg-base-100 flex items-center justify-center px-4 py-10 h-[calc(100vh-4rem)]">
       <div className="w-full max-w-2xl bg-base-200 shadow-xl rounded-2xl p-6 sm:p-10">
         <h1 className="text-3xl font-bold text-center mb-8">Update Your Profile</h1>
 

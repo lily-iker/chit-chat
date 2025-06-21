@@ -169,7 +169,7 @@ const ChatList = () => {
             <p className="text-sm text-base-content/50">
               {searchQuery
                 ? 'Try searching for something else'
-                : 'Start a conversation to see it here'}
+                : 'Make some friends to see it here'}
             </p>
           </div>
         ) : (

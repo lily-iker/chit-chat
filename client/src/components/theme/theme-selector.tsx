@@ -6,7 +6,7 @@ const ThemeSelector = () => {
   const { theme, setTheme } = useThemeStore()
 
   return (
-    <div className="dropdown dropdown-end">
+    <div className="dropdown dropdown-center dropdown-top lg:dropdown-bottom">
       {/* DROPDOWN TRIGGER */}
       <button tabIndex={0} className="btn btn-ghost">
         <Paintbrush className="size-5" />

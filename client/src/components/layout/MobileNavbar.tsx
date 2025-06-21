@@ -1,47 +1,39 @@
-import { MessageSquareText, Plus, Search } from 'lucide-react'
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { Home } from 'lucide-react'
+import FriendButton from '../user/friend-button'
+import ThemeSelector from '../theme/theme-selector'
+import UserProfile from '../user/user-profile'
+import { useNavigate } from 'react-router'
 
 const MobileNavbar = () => {
-  const [searchQuery, setSearchQuery] = useState('')
+  const navigate = useNavigate()
 
   return (
-    <header>
-      <div className="flex-shrink-0 p-4 border-b border-base-300">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all">
-              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <MessageSquareText className="w-5 h-5 text-primary" />
-              </div>
-              <h1 className="text-lg font-bold">Chit Chat</h1>
-            </Link>
-          </div>
-          <button
-            className="btn btn-circle btn-ghost"
-            onClick={() => {
-              // TODO: Open create chat modal
-              console.log('Create new chat')
-            }}
-            title="New Chat"
-          >
-            <Plus className="w-5 h-5" />
+    <div className="fixed bottom-0 left-0 right-0 bg-base-100 border-t border-base-300 z-50">
+      <div className="flex items-center justify-around py-2 px-4 safe-area-pb">
+        {/* Chats Tab */}
+        <div onClick={() => navigate('/')} className="flex flex-col items-center gap-1 p-2">
+          <button className="btn btn-ghost">
+            <Home className="size-5" />
+            <span className="hidden sm:inline">Home</span>
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/50" />
-          <input
-            type="text"
-            placeholder="Search chats..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-base-200 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-          />
+        {/* Theme Tab */}
+        <div className="flex flex-col items-center gap-1 p-2">
+          <ThemeSelector />
         </div>
+
+        {/* Profile Tab */}
+        <div className="flex flex-col items-center gap-1 p-2">
+          <UserProfile />
+        </div>
+
+        {/* Friends Tab */}
+        {/* <div className="flex flex-col items-center gap-1 p-2">
+          <FriendButton />
+        </div> */}
       </div>
-    </header>
+    </div>
   )
 }
 

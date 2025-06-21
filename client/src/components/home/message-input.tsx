@@ -1,5 +1,3 @@
-'use client'
-
 import type React from 'react'
 
 import { useRef, useState } from 'react'
@@ -151,7 +149,7 @@ const MessageInput = () => {
 
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle ${
+            className={`sm:flex btn btn-circle ${
               imagePreview ? 'text-emerald-500' : 'text-zinc-400'
             }`}
             onClick={() => fileInputRef.current?.click()}

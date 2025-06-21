@@ -6,7 +6,7 @@ const UserProfile = () => {
   const { logout, isLoading } = useAuthStore()
 
   return (
-    <div className="dropdown dropdown-end">
+    <div className="dropdown dropdown-center dropdown-top lg:dropdown-bottom">
       {/* DROPDOWN TRIGGER */}
       <button tabIndex={0} className="btn btn-ghost">
         <User className="size-5" />
@@ -26,6 +26,9 @@ const UserProfile = () => {
               w-full px-4 py-3 rounded-xl flex items-center gap-2 transition-colors
               hover:bg-base-content/5
             `}
+            onClick={() =>
+              document.activeElement instanceof HTMLElement && document.activeElement.blur()
+            } // closes dropdown
           >
             <User className="size-5" />
             <span className="text-sm font-medium">Update Profile</span>
