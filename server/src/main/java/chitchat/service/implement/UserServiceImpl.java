@@ -49,16 +49,20 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserInfoResponse setUpMyBasicInfo(UserInfoRequest userInfoRequest, MultipartFile profileImageFile) throws Exception {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        CustomUserDetails userDetails = (CustomUserDetails) securityContext.getAuthentication().getPrincipal();
-
+        CustomUserDetails userDetails = getCurrentUser();
         User user = userDetails.getUser();
 
         user.setFullName(userInfoRequest.getFullName());
         user.setBio(userInfoRequest.getBio());
 
-        String profileImageUrl = minioService.uploadFileToPublicBucket(profileImageFile);
-        user.setProfileImageUrl(profileImageUrl);
+        if (profileImageFile != null) {
+            if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+                minioService.deleteFileFromPublicBucket(user.getProfileImageUrl());
+            }
+
+            String profileImageUrl = minioService.uploadFileToPublicBucket(profileImageFile);
+            user.setProfileImageUrl(profileImageUrl);
+        }
 
         user.setProfileCompleted(true);
         userRepository.save(user);
@@ -68,9 +72,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInfoResponse getMyInfo() {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        CustomUserDetails userDetails = (CustomUserDetails) securityContext.getAuthentication().getPrincipal();
-
+        CustomUserDetails userDetails = getCurrentUser();
         return userMapper.toUserInfoResponse(userDetails.getUser());
     }
 
