@@ -97,7 +97,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository.save(user);
 
         UserNode userNode = UserNode.builder()
-                .id(user.getId())
+                .userId(user.getId())
                 .build();
 
         userNodeRepository.save(userNode);

@@ -7,9 +7,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
+
+    @Query("MATCH (u:User) WHERE u.userId = $userId RETURN u")
+    Optional<UserNode> findByUserId(@Param("userId") String userId);
 
     @Query("""
         MATCH (u:User)
@@ -24,7 +28,7 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
     long countAllUsers();
 
     @Query("""
-        MATCH (u:User {id: $userId})-[:FRIEND]-(friend:User)
+        MATCH (u:User {userId: $userId})-[:FRIEND]-(friend:User)
         RETURN friend
         SKIP $skip
         LIMIT $limit
@@ -33,11 +37,11 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                                         @Param("skip") int skip,
                                         @Param("limit") int limit);
 
-    @Query("MATCH (u:User {id: $userId})-[:FRIEND]-(friend:User) RETURN count(friend)")
+    @Query("MATCH (u:User {userId: $userId})-[:FRIEND]-(friend:User) RETURN count(friend)")
     long countFriends(@Param("userId") String userId);
 
     @Query("""
-        MATCH (u:User {id: $userId})-[:BLOCKED]->(blocked:User)
+        MATCH (u:User {userId: $userId})-[:BLOCKED]->(blocked:User)
         RETURN blocked
         SKIP $skip
         LIMIT $limit
@@ -46,13 +50,13 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                                              @Param("skip") int skip,
                                              @Param("limit") int limit);
 
-    @Query("MATCH (u:User {id: $userId})-[:BLOCKED]->(blocked:User) RETURN count(blocked)")
+    @Query("MATCH (u:User {userId: $userId})-[:BLOCKED]->(blocked:User) RETURN count(blocked)")
     long countBlockedUsers(@Param("userId") String userId);
 
     // Send a friend request
     @Query("""
-        MATCH (a:User {id: $currentUserId})
-        MATCH (b:User {id: $targetUserId})
+        MATCH (a:User {userId: $currentUserId})
+        MATCH (b:User {userId: $targetUserId})
         WHERE NOT (a)-[:FRIEND|BLOCKED]-(b)
           AND NOT (a)-[:PENDING_REQUEST]->(b)
           AND NOT (b)-[:PENDING_REQUEST]->(a)
@@ -63,7 +67,7 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
 
     // Cancel a sent friend request
     @Query("""
-        MATCH (a:User {id: $currentUserId})-[r:PENDING_REQUEST]->(b:User {id: $targetUserId})
+        MATCH (a:User {userId: $currentUserId})-[r:PENDING_REQUEST]->(b:User {userId: $targetUserId})
         DELETE r
     """)
     void cancelFriendRequest(@Param("currentUserId") String currentUserId,
@@ -71,7 +75,7 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
 
     // Accept a friend request
     @Query("""
-        MATCH (a:User {id: $targetUserId})-[r:PENDING_REQUEST]->(b:User {id: $currentUserId})
+        MATCH (a:User {userId: $targetUserId})-[r:PENDING_REQUEST]->(b:User {userId: $currentUserId})
         DELETE r
         MERGE (a)-[:FRIEND]-(b)
     """)
@@ -80,7 +84,7 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
 
     // Reject a friend request
     @Query("""
-        MATCH (a:User {id: $targetUserId})-[r:PENDING_REQUEST]->(b:User {id: $currentUserId})
+        MATCH (a:User {userId: $targetUserId})-[r:PENDING_REQUEST]->(b:User {userId: $currentUserId})
         DELETE r
     """)
     void rejectFriendRequest(@Param("currentUserId") String currentUserId,
@@ -88,7 +92,7 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
 
     // Incoming friend requests with pagination
     @Query("""
-        MATCH (a:User)-[:PENDING_REQUEST]->(b:User {id: $userId})
+        MATCH (a:User)-[:PENDING_REQUEST]->(b:User {userId: $userId})
         RETURN a
         SKIP $skip
         LIMIT $limit
@@ -98,12 +102,12 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                                                       @Param("limit") int limit);
 
 
-    @Query("MATCH (a:User)-[:PENDING_REQUEST]->(b:User {id: $userId}) RETURN count(a)")
+    @Query("MATCH (a:User)-[:PENDING_REQUEST]->(b:User {userId: $userId}) RETURN count(a)")
     long countIncomingFriendRequests(@Param("userId") String userId);
 
     // Outgoing friend requests with pagination
     @Query("""
-        MATCH (a:User {id: $userId})-[:PENDING_REQUEST]->(b:User)
+        MATCH (a:User {userId: $userId})-[:PENDING_REQUEST]->(b:User)
         RETURN b
         SKIP $skip
         LIMIT $limit
@@ -113,19 +117,19 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                                                   @Param("limit") int limit);
 
 
-    @Query("MATCH (a:User {id: $userId})-[:PENDING_REQUEST]->(b:User) RETURN count(b)")
+    @Query("MATCH (a:User {userId: $userId})-[:PENDING_REQUEST]->(b:User) RETURN count(b)")
     long countSentFriendRequests(@Param("userId") String userId);
 
     @Query("""
-        MATCH (a:User {id: $currentUserId})-[r:FRIEND]-(b:User {id: $targetUserId})
+        MATCH (a:User {userId: $currentUserId})-[r:FRIEND]-(b:User {userId: $targetUserId})
         DELETE r
     """)
     void removeFriend(@Param("currentUserId") String currentUserId,
                       @Param("targetUserId") String targetUserId);
 
     @Query("""
-        MATCH (a:User {id: $currentUserId})
-        MATCH (b:User {id: $targetUserId})
+        MATCH (a:User {userId: $currentUserId})
+        MATCH (b:User {userId: $targetUserId})
         OPTIONAL MATCH (a)-[f:FRIEND]-(b)
         OPTIONAL MATCH (a)-[p1:PENDING_REQUEST]->(b)
         OPTIONAL MATCH (b)-[p2:PENDING_REQUEST]->(a)
@@ -136,41 +140,41 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                    @Param("targetUserId") String targetUserId);
 
     @Query("""
-        MATCH (a:User {id: $currentUserId})-[r:BLOCKED]->(b:User {id: $targetUserId})
+        MATCH (a:User {userId: $currentUserId})-[r:BLOCKED]->(b:User {userId: $targetUserId})
         DELETE r
     """)
     void unblockUser(@Param("currentUserId") String currentUserId,
                      @Param("targetUserId") String targetUserId);
 
     @Query("""
-        MATCH (u:User {id: $userId})-[:BLOCKED]->(blocked:User)
-        WITH collect(blocked.id) AS blockedByMe, u
+        MATCH (u:User {userId: $userId})-[:BLOCKED]->(blocked:User)
+        WITH collect(blocked.userId) AS blockedByMe, u
         OPTIONAL MATCH (u)<-[:BLOCKED]-(blocked:User)
-        WITH blockedByMe, collect(blocked.id) AS blockedMe
+        WITH blockedByMe, collect(blocked.userId) AS blockedMe
         RETURN blockedByMe + blockedMe AS allBlocked
     """)
     List<String> getAllBlockedUserIds(String userId);
 
     @Query("""
-        MATCH (a:User {id: $currentUserId})-[:FRIEND]-(b:User)
-        WHERE b.id IN $targetUserIds
-        RETURN b.id
+        MATCH (a:User {userId: $currentUserId})-[:FRIEND]-(b:User)
+        WHERE b.userId IN $targetUserIds
+        RETURN b.userId
     """)
     List<String> getFriendIdsIn(@Param("currentUserId") String currentUserId, 
                                 @Param("targetUserIds") List<String> targetUserIds);
 
     @Query("""
-        MATCH (a:User {id: $currentUserId})-[:PENDING_REQUEST]->(b:User)
-        WHERE b.id IN $targetUserIds
-        RETURN b.id
+        MATCH (a:User {userId: $currentUserId})-[:PENDING_REQUEST]->(b:User)
+        WHERE b.userId IN $targetUserIds
+        RETURN b.userId
     """)
     List<String> getSentFriendRequestIdsIn(@Param("currentUserId") String currentUserId, 
                                            @Param("targetUserIds") List<String> targetUserIds);
 
     @Query("""
-        MATCH (b:User {id: $currentUserId})<-[:PENDING_REQUEST]-(a:User)
-        WHERE a.id IN $targetUserIds
-        RETURN a.id
+        MATCH (b:User {userId: $currentUserId})<-[:PENDING_REQUEST]-(a:User)
+        WHERE a.userId IN $targetUserIds
+        RETURN a.userId
     """)
     List<String> getIncomingFriendRequestIdsIn(@Param("currentUserId") String currentUserId, 
                                                @Param("targetUserIds") List<String> targetUserIds);

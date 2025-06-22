@@ -5,8 +5,10 @@ import chitchat.dto.response.PageResponse;
 import chitchat.dto.response.user.UserInfoResponse;
 import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.exception.AuthenticationException;
+import chitchat.exception.ResourceNotFoundException;
 import chitchat.mapper.UserMapper;
 import chitchat.model.User;
+import chitchat.model.UserNode;
 import chitchat.model.enumeration.RelationshipStatus;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.UserNodeRepository;
@@ -52,7 +54,10 @@ public class UserServiceImpl implements UserService {
         CustomUserDetails userDetails = getCurrentUser();
         User user = userDetails.getUser();
 
-        user.setFullName(userInfoRequest.getFullName());
+        UserNode userNode = userNodeRepository.findByUserId(user.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setFullName(userInfoRequest.getFullName().trim());
         user.setBio(userInfoRequest.getBio());
 
         if (profileImageFile != null) {
@@ -62,10 +67,14 @@ public class UserServiceImpl implements UserService {
 
             String profileImageUrl = minioService.uploadFileToPublicBucket(profileImageFile);
             user.setProfileImageUrl(profileImageUrl);
+            userNode.setProfileImageUrl(profileImageUrl);
         }
 
         user.setProfileCompleted(true);
         userRepository.save(user);
+
+        userNode.setFullName(userInfoRequest.getFullName().trim());
+        userNodeRepository.save(userNode);
 
         return userMapper.toUserInfoResponse(user);
     }
