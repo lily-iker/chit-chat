@@ -19,7 +19,9 @@ const AuthNavbar = () => {
               <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <MessageSquareText className="w-5 h-5 text-primary" />
               </div>
-              <h1 className="text-lg font-bold">Chit Chat</h1>
+              <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
+                ChitChat
+              </span>
             </Link>
           </div>
 

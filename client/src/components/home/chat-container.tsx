@@ -8,8 +8,9 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { MessageType } from '@/types/enum/MessageType'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import TypingIndicator from './typing-indicator'
-import { formatMessageTime } from '@/utils/timeUtils'
-// import ChatMessagesSkeleton from './skeleton/chat-messages-skeleton'
+import { formatDateDivider, formatMessageTime, isSameDay } from '@/utils/timeUtils'
+import DateDivider from './date-divider'
+import ChatMessagesSkeleton from './skeleton/chat-messages-skeleton'
 
 const ChatContainer = () => {
   const {
@@ -134,8 +135,7 @@ const ChatContainer = () => {
   }
 
   if (isSelectedChatMessagesLoading) {
-    // return <ChatMessagesSkeleton />
-    return null
+    return <ChatMessagesSkeleton />
   }
 
   return (
@@ -160,15 +160,6 @@ const ChatContainer = () => {
         )}
 
         {selectedChatMessages.map((message, index) => {
-          // SYSTEM message
-          if (message.messageType === MessageType.SYSTEM) {
-            return (
-              <div key={message.id} className="w-full text-center py-2">
-                <span className="text-xs text-base-content/60 italic">{message.content}</span>
-              </div>
-            )
-          }
-
           const isMyMessage = message.senderId === authUser?.id
           const seenByUsers = shouldShowSeenIndicators(message.id)
 
@@ -192,8 +183,26 @@ const ChatContainer = () => {
           // Determine if this message should show profile image
           const showProfileImage = !nextIsFromSameSender
 
+          const shouldShowDateDivider =
+            !prevMessage || !isSameDay(message.createdAt, prevMessage.createdAt)
+
+          // SYSTEM message
+          if (message.messageType === MessageType.SYSTEM) {
+            return (
+              <div key={message.id} className="w-full text-center py-2">
+                {shouldShowDateDivider && (
+                  <DateDivider date={formatDateDivider(message.createdAt)} />
+                )}
+                <div className="w-full text-center py-2">
+                  <span className="text-xs text-base-content/60 italic">{message.content}</span>
+                </div>{' '}
+              </div>
+            )
+          }
+
           return (
             <div key={message.id} className="relative">
+              {shouldShowDateDivider && <DateDivider date={formatDateDivider(message.createdAt)} />}
               {/* Message container */}
               <div
                 className={`flex items-end gap-2 ${isMyMessage ? 'justify-end' : 'justify-start'} ${
@@ -304,9 +313,11 @@ const ChatContainer = () => {
                         <div
                           key={userId}
                           className="w-4 h-4 rounded-full border-2 border-base-100 tooltip tooltip-left"
-                          data-tip={`Seen by ${participant?.fullName || 'Unknown'} ${
-                            message.readInfo?.find((r) => r.userId === userId)?.readAt
-                          }`}
+                          data-tip={`Seen by ${
+                            participant?.fullName || 'Unknown'
+                          } ${formatMessageTime(
+                            message.readInfo?.find((r) => r.userId === userId)?.readAt || ''
+                          )}`}
                         >
                           <img
                             src={
