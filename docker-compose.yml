@@ -12,7 +12,8 @@ services:
       - neo4j_data:/data
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio
+    container_name: minio
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
@@ -22,6 +23,16 @@ services:
       - minio_data:/data
     command: server /data
 
+  redis:
+    image: redis
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
 volumes:
   neo4j_data:
   minio_data:
+  redis_data:
