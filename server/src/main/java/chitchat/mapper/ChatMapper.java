@@ -10,6 +10,7 @@ import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.MessageReadInfoRepository;
 import chitchat.repository.MessageRepository;
 import chitchat.repository.UserRepository;
+import chitchat.utils.MediaUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ public class ChatMapper {
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
     private final MessageReadInfoRepository messageReadInfoRepository;
+    private final MediaUtils mediaUtils;
 
     public ChatResponse toChatResponse(CustomUserDetails currentUser, Chat chat) {
         ChatResponse chatResponse = ChatResponse.builder()
@@ -53,18 +55,18 @@ public class ChatMapper {
                 User otherUser = userRepository.findById(otherUserId)
                         .orElseThrow(() -> new ResourceNotFoundException("User not found: " + otherUserId));
                 chatResponse.setName(otherUser.getFullName());
-                chatResponse.setChatImageUrl(otherUser.getProfileImageUrl());
+                chatResponse.setChatImageUrl(mediaUtils.resolveMediaUrl(otherUser.getProfileImageUrl()));
 
                 List<ChatParticipantInfoResponse> participantDetails = List.of(
                         ChatParticipantInfoResponse.builder()
                                 .id(currentUser.getUser().getId())
                                 .fullName(currentUser.getUser().getFullName())
-                                .profileImageUrl(currentUser.getUser().getProfileImageUrl())
+                                .profileImageUrl(mediaUtils.resolveMediaUrl(currentUser.getUser().getProfileImageUrl()))
                                 .build(),
                         ChatParticipantInfoResponse.builder()
                                 .id(otherUser.getId())
                                 .fullName(otherUser.getFullName())
-                                .profileImageUrl(otherUser.getProfileImageUrl())
+                                .profileImageUrl(mediaUtils.resolveMediaUrl(otherUser.getProfileImageUrl()))
                                 .build()
                 );
                 chatResponse.setParticipantsInfo(participantDetails);
@@ -79,7 +81,7 @@ public class ChatMapper {
                             ChatParticipantInfoResponse.builder()
                                     .id(user.getId())
                                     .fullName(user.getFullName())
-                                    .profileImageUrl(user.getProfileImageUrl())
+                                    .profileImageUrl(mediaUtils.resolveMediaUrl(user.getProfileImageUrl()))
                                     .build())
                     .toList();
 
@@ -119,7 +121,7 @@ public class ChatMapper {
                 User otherUser = userRepository.findById(otherUserId)
                         .orElseThrow(() -> new ResourceNotFoundException("User not found: " + otherUserId));
                 chatResponse.setName(otherUser.getFullName());
-                chatResponse.setChatImageUrl(otherUser.getProfileImageUrl());
+                chatResponse.setChatImageUrl(mediaUtils.resolveMediaUrl(otherUser.getProfileImageUrl()));
             }
         }
 
