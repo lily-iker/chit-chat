@@ -111,7 +111,9 @@ const ChatList = () => {
               <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <MessageSquareText className="w-5 h-5 text-primary" />
               </div>
-              <h1 className="text-lg font-bold">Chit Chat</h1>
+              <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
+                ChitChat
+              </span>
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -176,11 +178,7 @@ const ChatList = () => {
           // Chat items
           <div>
             {filteredChats.map((chat) => {
-              // const isTyping = chat.participantsInfo?.some(
-              //   (p) => p.id !== authUser?.id && chat.typingUserIds?.includes(p.id)
-              // )
-
-              const isTyping = false
+              const isTyping = chat.typingParticipants && chat.typingParticipants?.length > 0
 
               return (
                 <button
@@ -228,7 +226,24 @@ const ChatList = () => {
                     <div className="flex items-center justify-between mt-0.5">
                       <div className="truncate text-xs max-w-[85%]">
                         {isTyping ? (
-                          <span className="text-primary italic">Typing...</span>
+                          <div className="flex items-center gap-1">
+                            <div className="bg-secondary rounded-xl px-2 py-1.5">
+                              <div className="flex space-x-1">
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full bg-secondary-content opacity-60 animate-bounce"
+                                  style={{ animationDelay: '0ms' }}
+                                />
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full bg-secondary-content opacity-60 animate-bounce"
+                                  style={{ animationDelay: '100ms' }}
+                                />
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full bg-secondary-content opacity-60 animate-bounce"
+                                  style={{ animationDelay: '200ms' }}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         ) : chat.lastMessageContent ? (
                           getMessagePreview(chat)
                         ) : (

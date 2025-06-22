@@ -211,7 +211,24 @@ const Sidebar = () => {
                     <div className="flex items-center justify-between mt-0.5">
                       <div className="truncate text-xs max-w-[85%]">
                         {isTyping ? (
-                          <span className="text-primary italic">Typing...</span>
+                          <div className="flex items-center gap-1">
+                            <div className="bg-secondary rounded-xl px-2 py-1.5">
+                              <div className="flex space-x-1">
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full bg-secondary-content opacity-60 animate-bounce"
+                                  style={{ animationDelay: '0ms' }}
+                                />
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full bg-secondary-content opacity-60 animate-bounce"
+                                  style={{ animationDelay: '100ms' }}
+                                />
+                                <div
+                                  className="w-1.5 h-1.5 rounded-full bg-secondary-content opacity-60 animate-bounce"
+                                  style={{ animationDelay: '200ms' }}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         ) : chat.lastMessageContent ? (
                           getMessagePreview(chat)
                         ) : (
