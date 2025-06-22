@@ -1,6 +1,6 @@
 import { Paintbrush } from 'lucide-react'
 import { useThemeStore } from '@/store/useThemeStore'
-import { THEMES } from '@/constant'
+import { THEMES } from '@/constant/theme'
 
 const ThemeSelector = () => {
   const { theme, setTheme } = useThemeStore()
