@@ -8,8 +8,6 @@ import chitchat.dto.response.ApiResponse;
 import chitchat.model.enumeration.MediaType;
 import chitchat.model.enumeration.MessageType;
 import chitchat.service.interfaces.ChatService;
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +26,6 @@ import java.util.Map;
 public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final Cloudinary cloudinary;
     private final ChatService chatService;
 
     @PostMapping
@@ -117,76 +114,4 @@ public class ChatController {
         chatService.handleTypingEvent(typingEventRequest);
     }
 
-    @MessageMapping("/sendMessage")
-    public void sendMessage(@Payload MessageRequest message) {
-        System.out.println("Received message: " + message.getContent());
-        messagingTemplate.convertAndSend("/topic/" + message.getChatId(), message);
-    }
-
-    @PostMapping("/sendMessageWithMedia")
-    public String sendMessageWithMedia(
-            @RequestPart("messageRequest") MessageRequest messageRequest,
-            @RequestPart(value = "file", required = false) MultipartFile file) {
-
-        try {
-            String mediaUrl = null;
-
-            // Upload file to Cloudinary if present
-            if (file != null && !file.isEmpty()) {
-                // Determine media type based on file content type
-                MediaType mediaType = null;
-                String resourceType = "auto"; // Default to auto detection
-
-                if (file.getContentType() != null) {
-                    if (file.getContentType().startsWith("image/")) {
-                        mediaType = MediaType.IMAGE;
-                        resourceType = "image";
-                    } else if (file.getContentType().startsWith("video/")) {
-                        mediaType = MediaType.VIDEO;
-                        resourceType = "video";
-                    }
-                }
-
-                // Set media type in the message request
-                messageRequest.setMediaType(mediaType);
-
-                // Upload to Cloudinary
-                Map uploadResult = cloudinary.uploader().upload(
-                        file.getBytes(),
-                        ObjectUtils.asMap(
-                                "resource_type", resourceType,
-                                "folder", "chitchat"
-                        )
-                );
-
-                // Get secure URL from Cloudinary
-                mediaUrl = (String) uploadResult.get("secure_url");
-
-                // Update message type based on content
-                if (messageRequest.getMessageType() == null) {
-                    if (messageRequest.getContent() != null && !messageRequest.getContent().trim().isEmpty()) {
-                        messageRequest.setMessageType(MessageType.TEXT_WITH_MEDIA);
-                    } else {
-                        messageRequest.setMessageType(MessageType.MEDIA);
-                    }
-                }
-            } else {
-                // If no file, ensure message type is TEXT
-                messageRequest.setMessageType(MessageType.TEXT);
-            }
-
-            // Set media URL in the message
-            messageRequest.setMediaUrl(mediaUrl);
-
-            // Send message via WebSocket
-            messagingTemplate.convertAndSend("/topic/" + messageRequest.getChatId(), messageRequest);
-
-            // Return the media URL
-            return mediaUrl != null ? mediaUrl : "";
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Error uploading file: " + e.getMessage();
-        }
-    }
 }

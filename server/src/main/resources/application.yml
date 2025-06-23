@@ -8,9 +8,6 @@ spring:
     authentication:
       username: ${NEO4J_USERNAME}
       password: ${NEO4J_PASSWORD}
-  redis:
-    host: ${REDIS_HOST}
-    port: ${REDIS_PORT}
   output:
     ansi:
       enabled: ALWAYS
@@ -34,3 +31,7 @@ minio:
   secretKey: ${MINIO_ROOT_PASSWORD}
   publicBucket: ${MINIO_PUBLIC_BUCKET}
   privateBucket: ${MINIO_PRIVATE_BUCKET}
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
