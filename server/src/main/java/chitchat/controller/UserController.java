@@ -37,18 +37,4 @@ public class UserController {
                 )
         );
     }
-
-    @GetMapping("/search")
-    public ResponseEntity<?> searchUsers(@RequestParam String query,
-                                         @RequestParam(defaultValue = "1") int pageNumber,
-                                         @RequestParam(defaultValue = "10") int pageSize,
-                                         @RequestParam(defaultValue = "fullName") String sortBy,
-                                         @RequestParam(defaultValue = "asc") String sortDirection) {
-        return ResponseEntity.ok(
-                new ApiResponse<>(200,
-                        "Users searched successfully",
-                        userService.searchUsers(query, pageNumber, pageSize, sortBy, sortDirection)
-                )
-        );
-    }
 }

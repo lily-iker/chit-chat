@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,7 +27,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final UserNodeRepository userNodeRepository;
     private final UserMapper userMapper;
     private final MinioService minioService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public CustomUserDetails getCurrentUser() {
@@ -84,72 +90,4 @@ public class UserServiceImpl implements UserService {
         CustomUserDetails userDetails = getCurrentUser();
         return userMapper.toUserInfoResponse(userDetails.getUser());
     }
-
-    @Override
-    // TODO: add redis caching for this method
-    public PageResponse<?> searchUsers(String query,
-                                       int pageNumber,
-                                       int pageSize,
-                                       String sortBy,
-                                       String sortDirection) {
-        if (pageNumber < 1) {
-            throw new IllegalArgumentException("Page number must be greater than or equal to 1");
-        }
-
-        String currentUserId = getCurrentUser().getUser().getId();
-
-        List<String> blockedUserIds = userNodeRepository.getAllBlockedUserIds(currentUserId);
-        blockedUserIds.add(currentUserId);
-
-        Pageable pageable = PageRequest.of(pageNumber - 1, pageSize);
-        Page<User> userPage = userRepository.searchByFullNameExcludingUsers(query, blockedUserIds, pageable);
-
-        List<String> pageUserIds = userPage.getContent().stream()
-                .map(User::getId)
-                .toList();
-
-        List<String> friendIds = userNodeRepository.getFriendIdsIn(currentUserId, pageUserIds);
-        List<String> sentRequestIds = userNodeRepository.getSentFriendRequestIdsIn(currentUserId, pageUserIds);
-        List<String> receivedRequestIds = userNodeRepository.getIncomingFriendRequestIdsIn(currentUserId, pageUserIds);
-
-        List<UserSearchResponse> userResponses = userPage.getContent().stream()
-                .map(user -> {
-                    RelationshipStatus status = determineRelationshipStatus(
-                            user.getId(), friendIds, sentRequestIds, receivedRequestIds);
-
-                    return UserSearchResponse.builder()
-                                .id(user.getId())
-                                .fullName(user.getFullName())
-                                .profileImageUrl(user.getProfileImageUrl())
-                                .relationshipStatus(status)
-                            .build();
-                })
-                .toList();
-
-        return PageResponse.builder()
-                .pageNumber(pageNumber)
-                .pageSize(pageSize)
-                .totalElements(userPage.getTotalElements())
-                .totalPages(userPage.getTotalPages())
-                .content(userResponses)
-                .build();
-    }
-
-    private RelationshipStatus determineRelationshipStatus(String userId,
-                                                           List<String> friendIds,
-                                                           List<String> sentRequestIds,
-                                                           List<String> receivedRequestIds) {
-
-        if (friendIds.contains(userId)) {
-            return RelationshipStatus.FRIEND;
-        } else if (sentRequestIds.contains(userId)) {
-            return RelationshipStatus.FRIEND_REQUEST_SENT;
-        } else if (receivedRequestIds.contains(userId)) {
-            return RelationshipStatus.FRIEND_REQUEST_RECEIVED;
-        } else {
-            return RelationshipStatus.NONE;
-        }
-    }
-
-
 }

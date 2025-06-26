@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface UserRepository extends MongoRepository<User, String> {
@@ -28,7 +29,7 @@ public interface UserRepository extends MongoRepository<User, String> {
             }
         }
     """)
-    Page<User> searchByFullNameExcludingUsers(String searchTerm, List<String> excludedUserIds, Pageable pageable);
+    Page<User> searchByFullNameExcludingUsers(String searchTerm, Set<String> excludedUserIds, Pageable pageable);
 
     @Query(value = """
         {

@@ -1,5 +1,7 @@
 package chitchat.repository;
 
+import chitchat.dto.response.user.UserRelationshipResponse;
+import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.model.UserNode;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
@@ -7,7 +9,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
@@ -153,22 +157,34 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
         WITH blockedByMe, collect(blocked.userId) AS blockedMe
         RETURN blockedByMe + blockedMe AS allBlocked
     """)
-    List<String> getAllBlockedUserIds(String userId);
+    Set<String> getAllBlockedUserIds(String userId);
+
+    @Query("""
+        MATCH (u:User {userId: $userId})-[:BLOCKED]->(blocked:User)
+        RETURN collect(blocked.userId) AS blockedByMe
+    """)
+    Set<String> getBlockedByMe(String userId);
+
+    @Query("""
+        MATCH (u:User {userId: $userId})<-[:BLOCKED]-(blocked:User)
+        RETURN collect(blocked.userId) AS blockedByOthers
+    """)
+    Set<String> getBlockedByOthers(String userId);
 
     @Query("""
         MATCH (a:User {userId: $currentUserId})-[:FRIEND]-(b:User)
         WHERE b.userId IN $targetUserIds
         RETURN b.userId
     """)
-    List<String> getFriendIdsIn(@Param("currentUserId") String currentUserId, 
-                                @Param("targetUserIds") List<String> targetUserIds);
+    Set<String> getFriendIdsIn(@Param("currentUserId") String currentUserId,
+                               @Param("targetUserIds") List<String> targetUserIds);
 
     @Query("""
         MATCH (a:User {userId: $currentUserId})-[:PENDING_REQUEST]->(b:User)
         WHERE b.userId IN $targetUserIds
         RETURN b.userId
     """)
-    List<String> getSentFriendRequestIdsIn(@Param("currentUserId") String currentUserId, 
+    Set<String> getSentFriendRequestIdsIn(@Param("currentUserId") String currentUserId,
                                            @Param("targetUserIds") List<String> targetUserIds);
 
     @Query("""
@@ -176,7 +192,122 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
         WHERE a.userId IN $targetUserIds
         RETURN a.userId
     """)
-    List<String> getIncomingFriendRequestIdsIn(@Param("currentUserId") String currentUserId, 
-                                               @Param("targetUserIds") List<String> targetUserIds);
+    Set<String> getIncomingFriendRequestIdsIn(@Param("currentUserId") String currentUserId,
+                                              @Param("targetUserIds") List<String> targetUserIds);
 
+    @Query("CREATE FULLTEXT INDEX user_search_index IF NOT EXISTS FOR (u:User) ON EACH [u.fullName]")
+    void createFullTextSearchIndex();
+
+    @Query("""
+        CALL db.index.fulltext.queryNodes('user_search_index', $searchTerm + '*') YIELD node as searchUser
+        WITH searchUser
+        MATCH (currentUser:User {userId: $currentUserId})
+        WHERE searchUser.userId <> $currentUserId
+          AND NOT (currentUser)-[:BLOCKED]-(searchUser)
+          AND NOT (searchUser)-[:BLOCKED]->(currentUser)
+    
+        OPTIONAL MATCH (currentUser)-[friendRel:FRIEND]-(searchUser)
+        OPTIONAL MATCH (currentUser)-[sentReq:PENDING_REQUEST]->(searchUser)
+        OPTIONAL MATCH (currentUser)<-[receivedReq:PENDING_REQUEST]-(searchUser)
+    
+        RETURN searchUser.userId as id,
+               searchUser.fullName as fullName,
+               searchUser.profileImageUrl as profileImageUrl,
+               CASE
+                 WHEN friendRel IS NOT NULL THEN 'FRIEND'
+                 WHEN sentReq IS NOT NULL THEN 'FRIEND_REQUEST_SENT'
+                 WHEN receivedReq IS NOT NULL THEN 'FRIEND_REQUEST_RECEIVED'
+                 ELSE 'NONE'
+               END as relationshipStatus
+        ORDER BY searchUser.fullName
+        SKIP $skip
+        LIMIT $limit
+    """)
+    List<UserSearchResponse> searchUsersWithRelationshipsFullText(
+            @Param("currentUserId") String currentUserId,
+            @Param("searchTerm") String searchTerm,
+            @Param("skip") int skip,
+            @Param("limit") int limit
+    );
+
+    // Count search results for pagination
+    @Query("""
+        CALL db.index.fulltext.queryNodes('user_search_index', $searchTerm + '*') YIELD node as searchUser
+        WITH searchUser
+        MATCH (currentUser:User {userId: $currentUserId})
+        WHERE searchUser.userId <> $currentUserId
+          AND NOT (currentUser)-[:BLOCKED]-(searchUser)
+          AND NOT (searchUser)-[:BLOCKED]->(currentUser)
+        RETURN count(searchUser)
+    """)
+    long countSearchResultsFullText(
+            @Param("currentUserId") String currentUserId,
+            @Param("searchTerm") String searchTerm
+    );
+
+    @Query("SHOW INDEXES YIELD name WHERE name = 'user_search_index' RETURN count(*) > 0 as exists")
+    boolean fullTextIndexExists();
+
+    // Fallback regex search for when full-text search is not available
+    @Query("""
+        MATCH (currentUser:User {userId: $currentUserId})
+        MATCH (searchUser:User)
+        WHERE searchUser.fullName =~ ('(?i).*' + $searchTerm + '.*')
+          AND searchUser.userId <> $currentUserId
+          AND NOT (currentUser)-[:BLOCKED]-(searchUser)
+          AND NOT (searchUser)-[:BLOCKED]->(currentUser)
+    
+        OPTIONAL MATCH (currentUser)-[friendRel:FRIEND]-(searchUser)
+        OPTIONAL MATCH (currentUser)-[sentReq:PENDING_REQUEST]->(searchUser)
+        OPTIONAL MATCH (currentUser)<-[receivedReq:PENDING_REQUEST]-(searchUser)
+    
+        RETURN searchUser.userId as userId,
+               searchUser.fullName as fullName,
+               searchUser.profileImageUrl as profileImageUrl,
+               CASE
+                 WHEN friendRel IS NOT NULL THEN 'FRIEND'
+                 WHEN sentReq IS NOT NULL THEN 'FRIEND_REQUEST_SENT'
+                 WHEN receivedReq IS NOT NULL THEN 'FRIEND_REQUEST_RECEIVED'
+                 ELSE 'NONE'
+               END as relationshipStatus
+        ORDER BY searchUser.fullName
+        SKIP $skip
+        LIMIT $limit
+    """)
+    List<UserSearchResponse> searchUsersWithRelationshipsRegex(
+            @Param("currentUserId") String currentUserId,
+            @Param("searchTerm") String searchTerm,
+            @Param("skip") int skip,
+            @Param("limit") int limit
+    );
+
+    @Query("""
+        MATCH (currentUser:User {userId: $currentUserId})
+        MATCH (searchUser:User)
+        WHERE searchUser.fullName =~ ('(?i).*' + $searchTerm + '.*')
+          AND searchUser.userId <> $currentUserId
+          AND NOT (currentUser)-[:BLOCKED]-(searchUser)
+          AND NOT (searchUser)-[:BLOCKED]->(currentUser)
+        RETURN count(searchUser)
+    """)
+    long countSearchResultsRegex(
+            @Param("currentUserId") String currentUserId,
+            @Param("searchTerm") String searchTerm
+    );
+
+    @Query("""
+        MATCH (u:User {userId: $userId})
+        OPTIONAL MATCH (u)-[:FRIEND]-(friends:User)
+        OPTIONAL MATCH (u)-[:PENDING_REQUEST]->(sentRequests:User)
+        OPTIONAL MATCH (u)<-[:PENDING_REQUEST]-(receivedRequests:User)
+        OPTIONAL MATCH (u)-[:BLOCKED]->(blocked:User)
+        OPTIONAL MATCH (u)<-[:BLOCKED]-(blockedBy:User)
+
+        RETURN collect(DISTINCT friends.userId) as friends,
+               collect(DISTINCT sentRequests.userId) as sentRequests,
+               collect(DISTINCT receivedRequests.userId) as receivedRequests,
+               collect(DISTINCT blocked.userId) as blocked,
+               collect(DISTINCT blockedBy.userId) as blockedBy
+    """)
+    UserRelationshipResponse getUserRelationshipResponse(@Param("userId") String userId);
 }
