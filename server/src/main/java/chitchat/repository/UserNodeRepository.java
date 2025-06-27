@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -196,7 +195,7 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                                               @Param("targetUserIds") List<String> targetUserIds);
 
     @Query("CREATE FULLTEXT INDEX user_search_index IF NOT EXISTS FOR (u:User) ON EACH [u.fullName]")
-    void createFullTextSearchIndex();
+    void createFullTextIndex();
 
     @Query("""
         CALL db.index.fulltext.queryNodes('user_search_index', $searchTerm + '*') YIELD node as searchUser
