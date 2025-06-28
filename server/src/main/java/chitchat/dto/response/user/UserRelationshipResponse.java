@@ -1,12 +1,12 @@
 package chitchat.dto.response.user;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.Set;
 
 @Getter
-@Setter
 @Builder
 public class UserRelationshipResponse implements Serializable {
     private Set<String> friends;

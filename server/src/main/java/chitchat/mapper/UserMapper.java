@@ -1,6 +1,7 @@
 package chitchat.mapper;
 
 import chitchat.dto.response.user.UserInfoResponse;
+import chitchat.dto.response.user.UserProfileResponse;
 import chitchat.model.User;
 import chitchat.utils.MediaUtils;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,14 @@ public class UserMapper {
                 .emailVerified(user.getEmailVerified())
                 .profileCompleted(user.getProfileCompleted())
                 .role(user.getRole())
+                .build();
+    }
+
+    public UserProfileResponse toUserProfileResponse(User user) {
+        return UserProfileResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .profileImageUrl(mediaUtils.resolveMediaUrl(user.getProfileImageUrl()))
                 .build();
     }
 }

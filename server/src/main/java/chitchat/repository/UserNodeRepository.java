@@ -40,6 +40,12 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                                         @Param("skip") int skip,
                                         @Param("limit") int limit);
 
+    @Query("""
+        MATCH (u:User {userId: $userId})-[:FRIEND]-(friend:User)
+        RETURN friend.userId
+    """)
+    List<String> findFriendIds(@Param("userId") String userId);
+
     @Query("MATCH (u:User {userId: $userId})-[:FRIEND]-(friend:User) RETURN count(friend)")
     long countFriends(@Param("userId") String userId);
 
@@ -52,6 +58,12 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
     List<UserNode> findBlockedUsersPaginated(@Param("userId") String userId,
                                              @Param("skip") int skip,
                                              @Param("limit") int limit);
+
+    @Query("""
+        MATCH (u:User {userId: $userId})-[:BLOCKED]->(blocked:User)
+        RETURN blocked.userId
+    """)
+    List<String> findBlockedUserIds(@Param("userId") String userId);
 
     @Query("MATCH (u:User {userId: $userId})-[:BLOCKED]->(blocked:User) RETURN count(blocked)")
     long countBlockedUsers(@Param("userId") String userId);
@@ -104,6 +116,12 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
                                                       @Param("skip") int skip,
                                                       @Param("limit") int limit);
 
+    @Query("""
+        MATCH (a:User)-[:PENDING_REQUEST]->(b:User {userId: $userId})
+        RETURN a.userId
+    """)
+    List<String> getIncomingFriendRequestIds(@Param("userId") String userId);
+
 
     @Query("MATCH (a:User)-[:PENDING_REQUEST]->(b:User {userId: $userId}) RETURN count(a)")
     long countIncomingFriendRequests(@Param("userId") String userId);
@@ -118,6 +136,12 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
     List<UserNode> getSentFriendRequestsPaginated(@Param("userId") String userId,
                                                   @Param("skip") int skip,
                                                   @Param("limit") int limit);
+
+    @Query("""
+        MATCH (a:User {userId: $userId})-[:PENDING_REQUEST]->(b:User)
+        RETURN b.userId
+    """)
+    List<String> getSentFriendRequestIds(@Param("userId") String userId);
 
 
     @Query("MATCH (a:User {userId: $userId})-[:PENDING_REQUEST]->(b:User) RETURN count(b)")
