@@ -3,9 +3,9 @@ package chitchat.exception.handler;
 import chitchat.dto.response.ApiErrorResponse;
 import chitchat.exception.AuthenticationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
@@ -26,36 +26,43 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiErrorResponse handleMethodArgumentNotValidException(MethodArgumentNotValidException e, WebRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e, WebRequest request) {
         String message = e.getBindingResult().getFieldError().getDefaultMessage();
-        return createApiErrorResponse(HttpStatus.BAD_REQUEST, message, request);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(createApiErrorResponse(HttpStatus.BAD_REQUEST, message, request));
     }
 
     @ExceptionHandler(IOException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiErrorResponse handleIOException(IOException e, WebRequest request) {
-        return createApiErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage(), request);
+    public ResponseEntity<ApiErrorResponse> handleIOException(IOException e, WebRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(createApiErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage(), request));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiErrorResponse handleIllegalArgumentException(IllegalArgumentException e, WebRequest request) {
-        return createApiErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage(), request);
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgumentException(IllegalArgumentException e, WebRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(createApiErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage(), request));
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ApiErrorResponse handleAuthenticationException(AuthenticationException e, WebRequest request) {
-        return createApiErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage(), request);
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(AuthenticationException e, WebRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(createApiErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage(), request));
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiErrorResponse handleException(Exception e, WebRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleException(Exception e, WebRequest request) {
         if (e.getCause() == null) {
-            return createApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
         }
-        return createApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getCause().getMessage(), request);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(createApiErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getCause().getMessage(), request));
     }
 }
