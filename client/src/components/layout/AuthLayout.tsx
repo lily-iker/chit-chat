@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router'
 import AuthNavbar from './AuthNavbar'
-// import Footer from "./footer"
 
 const AuthLayout = () => {
   return (
@@ -8,8 +7,6 @@ const AuthLayout = () => {
       <AuthNavbar />
 
       <Outlet />
-
-      {/* <Footer /> */}
     </main>
   )
 }

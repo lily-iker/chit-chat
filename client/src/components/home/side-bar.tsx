@@ -159,10 +159,6 @@ const Sidebar = () => {
           // Chat items
           <div>
             {filteredChats.map((chat) => {
-              // const isTyping = chat.participantsInfo?.some(
-              //   (p) => p.id !== authUser?.id && chat.typingUserIds?.includes(p.id)
-              // )
-
               const isTyping = chat.typingParticipants && chat.typingParticipants?.length > 0
 
               return (
