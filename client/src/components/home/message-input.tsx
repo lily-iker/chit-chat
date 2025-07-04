@@ -1,6 +1,6 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { ImageIcon, Send, X, Smile } from 'lucide-react'
+import { Send, X, Smile, AudioLinesIcon, ImagesIcon } from 'lucide-react'
 import EmojiPicker, { type EmojiClickData, Theme } from 'emoji-picker-react'
 import { useMessageStore } from '@/store/useMessageStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -11,7 +11,10 @@ const TYPING_EVENT_THROTTLE_TIME = 3000
 
 const MessageInput = () => {
   const [text, setText] = useState('')
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [mediaPreview, setMediaPreview] = useState<{
+    url: string
+    type: 'image' | 'video' | 'audio'
+  } | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const textInputRef = useRef<HTMLInputElement | null>(null)
@@ -56,19 +59,28 @@ const MessageInput = () => {
     sendTypingEventWithStrategy()
   }
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     const reader = new FileReader()
     reader.onloadend = () => {
-      setImagePreview(reader.result as string)
+      const url = reader.result as string
+
+      if (file.type.startsWith('image/')) {
+        setMediaPreview({ url, type: 'image' })
+      } else if (file.type.startsWith('video/')) {
+        setMediaPreview({ url, type: 'video' })
+      } else if (file.type.startsWith('audio/')) {
+        setMediaPreview({ url, type: 'audio' })
+      }
     }
     reader.readAsDataURL(file)
   }
 
-  const removeImage = () => {
-    setImagePreview(null)
+  // Update removeMedia function
+  const removeMedia = () => {
+    setMediaPreview(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -104,7 +116,7 @@ const MessageInput = () => {
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault()
-    if (!text.trim() && !imagePreview) return
+    if (!text.trim() && !mediaPreview) return
 
     // Clear typing state when sending message
     isTypingRef.current = false
@@ -132,8 +144,8 @@ const MessageInput = () => {
       await sendMessage(formData)
     }
 
-    // Send media message if there is an image preview
-    if (imagePreview) {
+    // Send 2 separate messages if both text and media are present
+    if (mediaPreview) {
       const mediaFormData = new FormData()
       const sendMessageRequest = {
         chatId: selectedChat.id,
@@ -144,15 +156,17 @@ const MessageInput = () => {
         'sendMessageRequest',
         new Blob([JSON.stringify(sendMessageRequest)], { type: 'application/json' })
       )
-      const blob = await fetch(imagePreview).then((res) => res.blob())
-      mediaFormData.append('mediaFile', blob, 'image.png')
+      const blob = await fetch(mediaPreview.url).then((res) => res.blob())
+      const fileExtension =
+        mediaPreview.type === 'image' ? 'png' : mediaPreview.type === 'video' ? 'mp4' : 'mp3'
+      mediaFormData.append('mediaFile', blob, `media.${fileExtension}`)
 
       await sendMessage(mediaFormData)
     }
 
     // Clear the input fields after sending the messages
     setText('')
-    setImagePreview(null)
+    setMediaPreview(null)
     setShowEmojiPicker(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -180,16 +194,33 @@ const MessageInput = () => {
 
   return (
     <div className="p-4 w-full relative">
-      {imagePreview && (
+      {mediaPreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
-            <img
-              src={imagePreview || '/placeholder.svg'}
-              alt="Preview"
-              className="w-20 h-20 object-cover rounded-lg border border-zinc-700"
-            />
+            {mediaPreview.type === 'image' && (
+              <img
+                src={mediaPreview.url}
+                alt="Preview"
+                className="max-w-[200px] object-cover rounded-lg border border-zinc-700"
+              />
+            )}
+
+            {mediaPreview.type === 'video' && (
+              <video
+                controls
+                className="max-w-[200px] object-cover rounded-lg border border-zinc-700"
+              >
+                <source src={mediaPreview.url} type="video/mp4" />
+              </video>
+            )}
+
+            {mediaPreview.type === 'audio' && (
+              <div className="max-w-[200px] flex items-center justify-center bg-gray-100 rounded-lg border border-zinc-700">
+                <AudioLinesIcon size={20} className="text-gray-500" />
+              </div>
+            )}
             <button
-              onClick={removeImage}
+              onClick={removeMedia}
               className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-base-300
               flex items-center justify-center"
               type="button"
@@ -231,10 +262,10 @@ const MessageInput = () => {
 
           <input
             type="file"
-            accept="image/*,video/*"
+            accept="image/*,video/*,audio/*"
             className="hidden"
             ref={fileInputRef}
-            onChange={handleImageChange}
+            onChange={handleMediaChange}
           />
 
           {/* Emoji Button */}
@@ -255,20 +286,20 @@ const MessageInput = () => {
           <button
             type="button"
             className={`btn btn-circle bg-transparent border-none btn-sm sm:btn-md ${
-              imagePreview
+              mediaPreview
                 ? 'text-primary hover:text-primary-focus'
                 : 'text-zinc-400 hover:text-primary'
             }`}
             onClick={() => fileInputRef.current?.click()}
           >
-            <ImageIcon size={20} />
+            <ImagesIcon size={20} />
           </button>
         </div>
 
         <button
           type="submit"
           className={`btn btn-sm bg-transparent border-none btn-circle sm:btn-md text-zinc-400 ${
-            !text.trim() && !imagePreview ? 'pointer-events-none' : 'hover:text-primary'
+            !text.trim() && !mediaPreview ? 'pointer-events-none' : 'hover:text-primary'
           }`}
         >
           <Send size={20} />

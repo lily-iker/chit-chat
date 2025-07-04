@@ -244,35 +244,64 @@ const ChatContainer = () => {
 
                   {/* Message bubble */}
                   <div className="relative">
-                    <div
-                      className={`px-3 py-2 break-words whitespace-pre-wrap relative ${
-                        isMyMessage
-                          ? `bg-primary text-primary-content ${
-                              showProfileImage ? 'rounded-xl rounded-br-sm' : 'rounded-xl'
-                            }`
-                          : `bg-secondary text-secondary-content ${
-                              showProfileImage ? 'rounded-xl rounded-bl-sm' : 'rounded-xl'
-                            }`
-                      }`}
-                      style={{
-                        wordBreak: 'break-word', // Ensures breaking of long words
-                        wordWrap: 'break-word', // Prevents overflow by wrapping long words
-                      }}
-                    >
-                      {/* Media attachment if any */}
-                      {message.mediaUrl && (
-                        <div className="mb-2">
+                    {/* Media attachment if any */}
+                    {message.mediaUrl ? (
+                      <div className="mb-2">
+                        {message.messageType === 'IMAGE' && (
                           <img
-                            src={message.mediaUrl || '/placeholder.svg'}
-                            alt="Attachment"
+                            src={message.mediaUrl}
+                            alt={message.content || 'Image attachment'}
                             className="max-w-[250px] rounded-lg"
+                            loading="lazy"
                           />
-                        </div>
-                      )}
+                        )}
 
-                      {/* Message content */}
-                      {message.content && <div>{message.content}</div>}
-                    </div>
+                        {message.messageType === 'GIF' && (
+                          <img
+                            src={message.mediaUrl}
+                            alt={message.content || 'GIF attachment'}
+                            className="max-w-[250px] rounded-lg"
+                            loading="lazy"
+                          />
+                        )}
+
+                        {message.messageType === 'VIDEO' && (
+                          <video controls className="max-w-[250px] rounded-lg">
+                            <source src={message.mediaUrl} type="video/mp4" />
+                            Your browser does not support the video tag.
+                          </video>
+                        )}
+
+                        {message.messageType === 'AUDIO' && (
+                          <audio controls className="w-full max-w-[250px]">
+                            <source
+                              src={message.mediaUrl}
+                              type={`audio/${message.mediaUrl.split('.').pop()}`}
+                            />
+                            Your browser does not support audio.
+                          </audio>
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        className={`px-3 py-2 break-words whitespace-pre-wrap relative ${
+                          isMyMessage
+                            ? `bg-primary text-primary-content ${
+                                showProfileImage ? 'rounded-xl rounded-br-sm' : 'rounded-xl'
+                              }`
+                            : `bg-secondary text-secondary-content ${
+                                showProfileImage ? 'rounded-xl rounded-bl-sm' : 'rounded-xl'
+                              }`
+                        }`}
+                        style={{
+                          wordBreak: 'break-word', // Ensures breaking of long words
+                          wordWrap: 'break-word', // Prevents overflow by wrapping long words
+                        }}
+                      >
+                        {/* Message content */}
+                        {message.content && <div>{message.content}</div>}
+                      </div>
+                    )}
 
                     {/* Message tail for last message in sequence */}
                     {showProfileImage && <></>}
