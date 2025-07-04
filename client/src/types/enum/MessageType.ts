@@ -1,7 +1,9 @@
 export const MessageType = {
   TEXT: 'TEXT',
-  MEDIA: 'MEDIA',
-  TEXT_WITH_MEDIA: 'TEXT_WITH_MEDIA',
+  IMAGE: 'IMAGE',
+  VIDEO: 'VIDEO',
+  AUDIO: 'AUDIO',
+  GIF: 'GIF',
   SYSTEM: 'SYSTEM',
 } as const
 

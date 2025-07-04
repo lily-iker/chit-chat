@@ -7,6 +7,7 @@ import chitchat.exception.NoPermissionException;
 import chitchat.mapper.MessageMapper;
 import chitchat.model.Chat;
 import chitchat.model.Message;
+import chitchat.model.enumeration.MessageType;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.ChatRepository;
 import chitchat.repository.MessageRepository;
@@ -57,10 +58,11 @@ public class MessageServiceImpl implements MessageService {
         if (mediaFile != null) {
             String mediaUrl = minioService.uploadFileToPrivateBucket(mediaFile);
             message.setMediaUrl(mediaUrl);
+            message.setMessageType(getMessageTypeFromFile(mediaFile));
         }
-
-        // TODO: handle message type and media type
-
+        else {
+            message.setMessageType(MessageType.TEXT);
+        }
         messageRepository.save(message);
 
         MessageResponse messageResponse = messageMapper.toMessageResponse(message);
@@ -80,5 +82,32 @@ public class MessageServiceImpl implements MessageService {
         }
 
         return messageResponse;
+    }
+
+    private MessageType getMessageTypeFromFile(MultipartFile mediaFile) {
+        String mediaType = mediaFile.getContentType();
+        MessageType messageType = MessageType.TEXT;
+
+        if (mediaType != null) {
+            if (mediaType.startsWith("image")) {
+                if (mediaType.equalsIgnoreCase("image/gif")) {
+                    messageType = MessageType.GIF;
+                }
+                else {
+                    messageType = MessageType.IMAGE;
+                }
+            }
+            else if (mediaType.startsWith("video")) {
+                messageType = MessageType.VIDEO;
+            }
+            else if (mediaType.startsWith("audio")) {
+                messageType = MessageType.AUDIO;
+            }
+            else {
+                throw new RuntimeException("Unsupported media type: " + mediaType);
+            }
+        }
+
+        return messageType;
     }
 }

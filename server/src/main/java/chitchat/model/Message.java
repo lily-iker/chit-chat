@@ -1,7 +1,6 @@
 package chitchat.model;
 
 import chitchat.model.auditing.AbstractAuditingDocument;
-import chitchat.model.enumeration.MediaType;
 import chitchat.model.enumeration.MessageType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -26,19 +25,17 @@ public class Message extends AbstractAuditingDocument {
 
     private MessageType messageType;
 
-    private MediaType mediaType;
-
     private String mediaUrl;
 
-    private String replyToMessageId; // ID of the message being replied to
+    private String replyToMessageId;
 
-    private String replyToMessageContent; // Content of the message being replied to
+    private String replyToMessageContent;
 
-    private String replyToMessageSenderId; // ID of the sender of the message being replied to
+    private String replyToMessageSenderId;
 
-    private String replyToMessageSenderName; // Name of the sender of the message being replied to
+    private String replyToMessageSenderName;
 
-    private Boolean isEdited; // Flag to indicate if the message is edited
+    private Boolean isEdited;
 
-    private Boolean isDeleted; // Flag to indicate if the message is deleted
+    private Boolean isDeleted;
 }

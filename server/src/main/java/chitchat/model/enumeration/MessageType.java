@@ -2,6 +2,9 @@ package chitchat.model.enumeration;
 
 public enum MessageType {
     TEXT,
-    MEDIA,
+    IMAGE,
+    VIDEO,
+    AUDIO,
+    GIF,
     SYSTEM,
 }

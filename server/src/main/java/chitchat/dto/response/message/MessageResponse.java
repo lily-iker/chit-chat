@@ -1,6 +1,5 @@
 package chitchat.dto.response.message;
 
-import chitchat.model.enumeration.MediaType;
 import chitchat.model.enumeration.MessageType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
@@ -21,7 +20,6 @@ public class MessageResponse {
     private String senderName;
     private String chatId;
     private MessageType messageType;
-    private MediaType mediaType;
     private String mediaUrl;
     private String replyToMessageId;
     private String replyToMessageContent;

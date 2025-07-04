@@ -1,6 +1,5 @@
 package chitchat.dto.response.chat;
 
-import chitchat.model.enumeration.MediaType;
 import chitchat.model.enumeration.MessageType;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,7 +21,6 @@ public class ChatResponse {
     private String lastMessageSenderId;
     private String lastMessageSenderName;
     private MessageType lastMessageType;
-    private MediaType lastMessageMediaType;
     private String lastMessageMediaUrl;
     private Instant lastMessageTime;
     private List<String> admins;
