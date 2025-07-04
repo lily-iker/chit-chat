@@ -17,7 +17,7 @@ public class MessageController {
 
     @PostMapping("/send")
     public ResponseEntity<?> sendMessage(@RequestPart("sendMessageRequest") SendMessageRequest sendMessageRequest,
-                                         @RequestPart(value = "mediaFile", required = false) MultipartFile mediaFile) {
+                                         @RequestPart(value = "mediaFile", required = false) MultipartFile mediaFile) throws Exception {
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
                         "Message sent successfully",

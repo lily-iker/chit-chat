@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MinioService {
 
-    private static final int PRIVATE_URL_EXPIRY_DAYS = 14;
+    private static final int PRIVATE_URL_EXPIRY_DAYS = 7;
 
     private final MinioClient minioClient;
     private final String publicBucket;
@@ -109,15 +109,23 @@ public class MinioService {
         return ""; // Return empty string if no extension is found
     }
 
-    public String getPresignedUrlForPublicBucket(String fileName) throws Exception {
-        return getPresignedUrl(fileName, publicBucket);
+    public String getPresignedUrl(String filePath) throws Exception {
+        // Split the path into bucket name and file name
+        String[] parts = filePath.split("/");
+
+        // Ensure valid format (bucket-name/file-name)
+        if (parts.length == 2) {
+            String bucketName = parts[0];  // Get the bucket name
+            String fileName = parts[1];    // Get the file name
+
+            // Generate and return presigned URL for the specific bucket
+            return getPresignedUrl(fileName, bucketName);
+        } else {
+            throw new RuntimeException("Invalid file path format: " + filePath);
+        }
     }
 
-    public String getPresignedUrlForPrivateBucket(String fileName) throws Exception {
-        return getPresignedUrl(fileName, privateBucket);
-    }
-
-    private String getPresignedUrl(String fileName, String bucketName) throws Exception {
+    public String getPresignedUrl(String fileName, String bucketName) throws Exception {
         return minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                         .method(Method.GET)
@@ -131,7 +139,6 @@ public class MinioService {
     public void deleteFileFromPublicBucket(String fileName) throws Exception {
         deleteFile(fileName, publicBucket);
     }
-
 
     public void deleteFileFromPrivateBucket(String fileName) throws Exception {
         deleteFile(fileName, privateBucket);

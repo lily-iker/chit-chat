@@ -10,6 +10,7 @@ import chitchat.model.Message;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.ChatRepository;
 import chitchat.repository.MessageRepository;
+import chitchat.service.MinioService;
 import chitchat.service.interfaces.ChatService;
 import chitchat.service.interfaces.MessageService;
 import chitchat.service.interfaces.NotificationService;
@@ -31,10 +32,11 @@ public class MessageServiceImpl implements MessageService {
     private final UserService userService;
     private final MessageMapper messageMapper;
     private final NotificationService notificationService;
+    private final MinioService minioService;
 
     @Override
     @Transactional
-    public MessageResponse sendMessage(SendMessageRequest sendMessageRequest, MultipartFile mediaFile) {
+    public MessageResponse sendMessage(SendMessageRequest sendMessageRequest, MultipartFile mediaFile) throws Exception {
 
         Chat chat = chatRepository.findById(sendMessageRequest.getChatId())
                 .orElseThrow(() -> new RuntimeException("Chat not found"));
@@ -53,8 +55,7 @@ public class MessageServiceImpl implements MessageService {
                 .build();
 
         if (mediaFile != null) {
-            // TODO: upload the media file and get the URL
-            String mediaUrl = "hehe";
+            String mediaUrl = minioService.uploadFileToPrivateBucket(mediaFile);
             message.setMediaUrl(mediaUrl);
         }
 
@@ -64,6 +65,8 @@ public class MessageServiceImpl implements MessageService {
 
         MessageResponse messageResponse = messageMapper.toMessageResponse(message);
         messageResponse.setSenderName(currentUser.getUser().getFullName());
+
+        System.out.println(messageResponse.getMediaUrl());
 
         messagingTemplate.convertAndSend(WebSocketDestination.CHAT_TOPIC_PREFIX + sendMessageRequest.getChatId(), messageResponse);
 

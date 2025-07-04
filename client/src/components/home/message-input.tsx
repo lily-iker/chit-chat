@@ -114,24 +114,43 @@ const MessageInput = () => {
 
     if (!selectedChat || !authUser) return
 
-    const formData = new FormData()
-    const sendMessageRequest = {
-      chatId: selectedChat.id,
-      senderId: authUser.id,
-      content: text.trim(),
+    // Send text message if there is text
+    if (text.trim()) {
+      const formData = new FormData()
+
+      const sendMessageRequest = {
+        chatId: selectedChat.id,
+        senderId: authUser.id,
+        content: text.trim(),
+      }
+
+      formData.append(
+        'sendMessageRequest',
+        new Blob([JSON.stringify(sendMessageRequest)], { type: 'application/json' })
+      )
+
+      await sendMessage(formData)
     }
 
-    formData.append(
-      'sendMessageRequest',
-      new Blob([JSON.stringify(sendMessageRequest)], { type: 'application/json' })
-    )
-
+    // Send media message if there is an image preview
     if (imagePreview) {
+      const mediaFormData = new FormData()
+      const sendMessageRequest = {
+        chatId: selectedChat.id,
+        senderId: authUser.id,
+      }
+
+      mediaFormData.append(
+        'sendMessageRequest',
+        new Blob([JSON.stringify(sendMessageRequest)], { type: 'application/json' })
+      )
       const blob = await fetch(imagePreview).then((res) => res.blob())
-      formData.append('mediaFile', blob, 'image.png')
+      mediaFormData.append('mediaFile', blob, 'image.png')
+
+      await sendMessage(mediaFormData)
     }
 
-    await sendMessage(formData)
+    // Clear the input fields after sending the messages
     setText('')
     setImagePreview(null)
     setShowEmojiPicker(false)

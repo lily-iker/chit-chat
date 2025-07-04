@@ -1,5 +1,3 @@
-'use client'
-
 import { useChatStore } from '@/store/useChatStore'
 import { useEffect, useRef } from 'react'
 import ChatHeader from './chat-header'
@@ -57,7 +55,7 @@ const ChatContainer = () => {
     if (messagesContainerRef.current) {
       const container = messagesContainerRef.current
       const isNearBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight < 100
+        container.scrollHeight - container.scrollTop - container.clientHeight < 500
 
       if (isNearBottom || !initialLoadComplete.current) {
         bottomRef.current?.scrollIntoView({ behavior: isNearBottom ? 'smooth' : 'auto' })

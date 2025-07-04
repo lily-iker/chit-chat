@@ -5,6 +5,7 @@ import chitchat.dto.response.message.MessageResponse;
 import chitchat.model.Message;
 import chitchat.model.MessageReadInfo;
 import chitchat.repository.MessageReadInfoRepository;
+import chitchat.service.MinioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,8 +18,14 @@ import java.util.stream.Collectors;
 public class MessageMapper {
 
     private final MessageReadInfoRepository messageReadInfoRepository;
+    private final MinioService minioService;
 
-    public MessageResponse toMessageResponse(Message message) {
+    public MessageResponse toMessageResponse(Message message) throws Exception {
+        String mediaUrl = null;
+        if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {
+            mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
+        }
+
         return MessageResponse.builder()
                 .id(message.getId())
                 .chatId(message.getChatId())
@@ -26,7 +33,7 @@ public class MessageMapper {
                 .senderId(message.getSenderId())
                 .messageType(message.getMessageType())
                 .mediaType(message.getMediaType())
-                .mediaUrl(message.getMediaUrl())
+                .mediaUrl(mediaUrl)
                 .replyToMessageId(message.getReplyToMessageId())
                 .replyToMessageContent(message.getReplyToMessageContent())
                 .replyToMessageSenderId(message.getReplyToMessageSenderId())
@@ -53,24 +60,35 @@ public class MessageMapper {
                                 .build(), Collectors.toList())));
 
         return messages.stream()
-                .map(message -> MessageResponse.builder()
-                        .id(message.getId())
-                        .chatId(message.getChatId())
-                        .content(message.getContent())
-                        .senderId(message.getSenderId())
-                        .messageType(message.getMessageType())
-                        .mediaType(message.getMediaType())
-                        .mediaUrl(message.getMediaUrl())
-                        .replyToMessageId(message.getReplyToMessageId())
-                        .replyToMessageContent(message.getReplyToMessageContent())
-                        .replyToMessageSenderId(message.getReplyToMessageSenderId())
-                        .replyToMessageSenderName(message.getReplyToMessageSenderName())
-                        .isEdited(message.getIsEdited())
-                        .isDeleted(message.getIsDeleted())
-                        .createdAt(message.getCreatedAt())
-                        .updatedAt(message.getUpdatedAt())
-                        .readInfo(readInfoMap.getOrDefault(message.getId(), List.of()))
-                        .build())
+                .map(message -> {
+                    String mediaUrl = null;
+                    if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {
+                        try {
+                            mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
+                        } catch (Exception e) {
+                            mediaUrl = message.getMediaUrl(); // Fallback to original URL if presigned URL fails
+                        }
+                    }
+
+                    return MessageResponse.builder()
+                            .id(message.getId())
+                            .chatId(message.getChatId())
+                            .content(message.getContent())
+                            .senderId(message.getSenderId())
+                            .messageType(message.getMessageType())
+                            .mediaType(message.getMediaType())
+                            .mediaUrl(mediaUrl)
+                            .replyToMessageId(message.getReplyToMessageId())
+                            .replyToMessageContent(message.getReplyToMessageContent())
+                            .replyToMessageSenderId(message.getReplyToMessageSenderId())
+                            .replyToMessageSenderName(message.getReplyToMessageSenderName())
+                            .isEdited(message.getIsEdited())
+                            .isDeleted(message.getIsDeleted())
+                            .createdAt(message.getCreatedAt())
+                            .updatedAt(message.getUpdatedAt())
+                            .readInfo(readInfoMap.getOrDefault(message.getId(), List.of()))
+                            .build();
+                })
                 .toList();
     }
 }
