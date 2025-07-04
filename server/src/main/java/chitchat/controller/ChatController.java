@@ -3,10 +3,7 @@ package chitchat.controller;
 import chitchat.dto.request.chat.CreateChatRequest;
 import chitchat.dto.request.chat.UpdateChatRequest;
 import chitchat.dto.request.event.TypingEventRequest;
-import chitchat.dto.request.message.MessageRequest;
 import chitchat.dto.response.ApiResponse;
-import chitchat.model.enumeration.MediaType;
-import chitchat.model.enumeration.MessageType;
 import chitchat.service.interfaces.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +13,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
