@@ -23,7 +23,9 @@ public class MessageMapper {
 
     public MessageResponse toMessageResponse(Message message) throws Exception {
         String mediaUrl = message.getMediaUrl();
-        if (message.getMessageType() != null && !message.getMessageType().equals(MessageType.GIF)) {
+        if (message.getMediaUrl() != null
+                && !message.getMediaUrl().isEmpty()
+                && !message.getMessageType().equals(MessageType.GIF)) {
             mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
         }
 
@@ -62,7 +64,9 @@ public class MessageMapper {
         return messages.stream()
                 .map(message -> {
                     String mediaUrl = message.getMediaUrl();
-                    if (message.getMessageType() != null && !message.getMessageType().equals(MessageType.GIF)) {
+                    if (message.getMediaUrl() != null
+                            && !message.getMediaUrl().isEmpty()
+                            && !message.getMessageType().equals(MessageType.GIF)) {
                         try {
                             mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
                         } catch (Exception e) {
