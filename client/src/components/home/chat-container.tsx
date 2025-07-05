@@ -247,7 +247,7 @@ const ChatContainer = () => {
                     {/* Media attachment if any */}
                     {message.mediaUrl ? (
                       <div className="mb-2">
-                        {message.messageType === 'IMAGE' && (
+                        {message.messageType === MessageType.IMAGE && (
                           <img
                             src={message.mediaUrl}
                             alt={message.content || 'Image attachment'}
@@ -256,7 +256,7 @@ const ChatContainer = () => {
                           />
                         )}
 
-                        {message.messageType === 'GIF' && (
+                        {message.messageType === MessageType.GIF && (
                           <img
                             src={message.mediaUrl}
                             alt={message.content || 'GIF attachment'}
@@ -265,14 +265,14 @@ const ChatContainer = () => {
                           />
                         )}
 
-                        {message.messageType === 'VIDEO' && (
+                        {message.messageType === MessageType.VIDEO && (
                           <video controls className="max-w-[250px] rounded-lg">
                             <source src={message.mediaUrl} type="video/mp4" />
                             Your browser does not support the video tag.
                           </video>
                         )}
 
-                        {message.messageType === 'AUDIO' && (
+                        {message.messageType === MessageType.AUDIO && (
                           <audio controls className="w-full max-w-[250px]">
                             <source
                               src={message.mediaUrl}

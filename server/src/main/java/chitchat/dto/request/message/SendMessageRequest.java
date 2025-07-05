@@ -9,4 +9,5 @@ public class SendMessageRequest {
     private String chatId;
     private String senderId;
     private String content;
+    private String mediaUrl;
 }

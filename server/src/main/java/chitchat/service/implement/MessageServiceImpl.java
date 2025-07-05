@@ -60,6 +60,10 @@ public class MessageServiceImpl implements MessageService {
             message.setMediaUrl(mediaUrl);
             message.setMessageType(getMessageTypeFromFile(mediaFile));
         }
+        else if (sendMessageRequest.getMediaUrl() != null && !sendMessageRequest.getMediaUrl().isEmpty()) {
+            message.setMediaUrl(sendMessageRequest.getMediaUrl());
+            message.setMessageType(MessageType.GIF);
+        }
         else {
             message.setMessageType(MessageType.TEXT);
         }
@@ -67,8 +71,6 @@ public class MessageServiceImpl implements MessageService {
 
         MessageResponse messageResponse = messageMapper.toMessageResponse(message);
         messageResponse.setSenderName(currentUser.getUser().getFullName());
-
-        System.out.println(messageResponse.getMediaUrl());
 
         messagingTemplate.convertAndSend(WebSocketDestination.CHAT_TOPIC_PREFIX + sendMessageRequest.getChatId(), messageResponse);
 

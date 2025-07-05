@@ -4,6 +4,7 @@ import chitchat.dto.response.message.MessageReadInfoResponse;
 import chitchat.dto.response.message.MessageResponse;
 import chitchat.model.Message;
 import chitchat.model.MessageReadInfo;
+import chitchat.model.enumeration.MessageType;
 import chitchat.repository.MessageReadInfoRepository;
 import chitchat.service.MinioService;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,8 @@ public class MessageMapper {
     private final MinioService minioService;
 
     public MessageResponse toMessageResponse(Message message) throws Exception {
-        String mediaUrl = null;
-        if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {
+        String mediaUrl = message.getMediaUrl();
+        if (message.getMessageType() != null && !message.getMessageType().equals(MessageType.GIF)) {
             mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
         }
 
@@ -60,8 +61,8 @@ public class MessageMapper {
 
         return messages.stream()
                 .map(message -> {
-                    String mediaUrl = null;
-                    if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {
+                    String mediaUrl = message.getMediaUrl();
+                    if (message.getMessageType() != null && !message.getMessageType().equals(MessageType.GIF)) {
                         try {
                             mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
                         } catch (Exception e) {

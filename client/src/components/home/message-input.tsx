@@ -1,10 +1,11 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Send, X, Smile, AudioLinesIcon, ImagesIcon } from 'lucide-react'
+import { Send, X, Smile, AudioLinesIcon, ImagesIcon, FileImage } from 'lucide-react'
 import EmojiPicker, { type EmojiClickData, Theme } from 'emoji-picker-react'
 import { useMessageStore } from '@/store/useMessageStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
+import GifPicker from './gif-picker'
 
 const TYPING_EVENT_DEBOUNCE_TIME = 3000
 const TYPING_EVENT_THROTTLE_TIME = 3000
@@ -16,9 +17,11 @@ const MessageInput = () => {
     type: 'image' | 'video' | 'audio'
   } | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showGifPicker, setShowGifPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const textInputRef = useRef<HTMLInputElement | null>(null)
   const emojiPickerRef = useRef<HTMLDivElement | null>(null)
+  const gifPickerRef = useRef<HTMLDivElement | null>(null)
   const lastTypingTimeRef = useRef<number>(0)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isTypingRef = useRef<boolean>(false)
@@ -110,8 +113,34 @@ const MessageInput = () => {
     sendTypingEventWithStrategy()
   }
 
+  const handleGifSelect = (gifUrl: string) => {
+    // Send GIF message immediately when selected (like Messenger/Discord)
+    if (!selectedChat || !authUser) return
+
+    const formData = new FormData()
+    const sendMessageRequest = {
+      chatId: selectedChat.id,
+      senderId: authUser.id,
+      mediaUrl: gifUrl, // Send GIF URL as mediaUrl
+    }
+
+    formData.append(
+      'sendMessageRequest',
+      new Blob([JSON.stringify(sendMessageRequest)], { type: 'application/json' })
+    )
+
+    sendMessage(formData)
+    setShowGifPicker(false)
+  }
+
   const toggleEmojiPicker = () => {
     setShowEmojiPicker((prev) => !prev)
+    setShowGifPicker(false)
+  }
+
+  const toggleGifPicker = () => {
+    setShowGifPicker((prev) => !prev)
+    setShowEmojiPicker(false)
   }
 
   const handleSendMessage = async (e: FormEvent) => {
@@ -171,7 +200,7 @@ const MessageInput = () => {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // Close emoji picker when clicking outside
+  // Close pickers when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -181,16 +210,24 @@ const MessageInput = () => {
       ) {
         setShowEmojiPicker(false)
       }
+
+      if (
+        gifPickerRef.current &&
+        !gifPickerRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest('[data-gif-button]')
+      ) {
+        setShowGifPicker(false)
+      }
     }
 
-    if (showEmojiPicker) {
+    if (showEmojiPicker || showGifPicker) {
       document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showEmojiPicker])
+  }, [showEmojiPicker, showGifPicker])
 
   return (
     <div className="p-4 w-full relative">
@@ -249,6 +286,13 @@ const MessageInput = () => {
         </div>
       )}
 
+      {/* GIF Picker */}
+      {showGifPicker && (
+        <div ref={gifPickerRef} className="absolute bottom-full left-4 mb-2 z-50">
+          <GifPicker onGifSelect={handleGifSelect} onClose={() => setShowGifPicker(false)} />
+        </div>
+      )}
+
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         <div className="flex-1 flex gap-2">
           <input
@@ -280,6 +324,20 @@ const MessageInput = () => {
             data-emoji-button
           >
             <Smile size={20} />
+          </button>
+
+          {/* GIF Button */}
+          <button
+            type="button"
+            className={`btn btn-circle bg-transparent border-none btn-sm sm:btn-md ${
+              showGifPicker
+                ? 'text-primary hover:text-primary-focus'
+                : 'text-zinc-400 hover:text-primary'
+            }`}
+            onClick={toggleGifPicker}
+            data-gif-button
+          >
+            <FileImage size={20} />
           </button>
 
           {/* Image Button */}
