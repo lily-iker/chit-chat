@@ -1,11 +1,13 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Send, X, Smile, AudioLinesIcon, ImagesIcon, FileImage } from 'lucide-react'
+import { Send, X, AudioLinesIcon, ImagesIcon } from 'lucide-react'
 import EmojiPicker, { type EmojiClickData, Theme } from 'emoji-picker-react'
 import { useMessageStore } from '@/store/useMessageStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useChatStore } from '@/store/useChatStore'
 import GifPicker from './gif-picker'
+import { HiGif } from 'react-icons/hi2'
+import { FaRegSmile } from 'react-icons/fa'
 
 const TYPING_EVENT_DEBOUNCE_TIME = 3000
 const TYPING_EVENT_THROTTLE_TIME = 3000
@@ -323,7 +325,7 @@ const MessageInput = () => {
             onClick={toggleEmojiPicker}
             data-emoji-button
           >
-            <Smile size={20} />
+            <FaRegSmile size={21} />
           </button>
 
           {/* GIF Button */}
@@ -337,7 +339,7 @@ const MessageInput = () => {
             onClick={toggleGifPicker}
             data-gif-button
           >
-            <FileImage size={20} />
+            <HiGif size={24} />
           </button>
 
           {/* Image Button */}

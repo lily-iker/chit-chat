@@ -166,21 +166,19 @@ const GifPicker = ({ onGifSelect, onClose }: GifPickerProps) => {
     <div className="w-96 h-96 bg-base-100 rounded-lg shadow-lg border border-base-300 flex flex-col">
       {/* Search */}
       <div className="p-4">
-        <div className="p-2 border border-base-300 rounded-xl">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/60"
-              size={16}
-            />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search for GIFs..."
-              className="input input-sm w-full pl-10 pr-4 focus:outline-none focus:border-none"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/60"
+            size={16}
+          />
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search for GIFs..."
+            className="input input-sm w-full pl-10 pr-4 focus:outline-none focus:border-none bg-accent/20 rounded-2xl"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
