@@ -1,4 +1,3 @@
-import type { MediaType } from './enum/MediaType'
 import type { MessageType } from './enum/MessageType'
 
 export interface Chat {
@@ -10,7 +9,6 @@ export interface Chat {
   lastMessageSenderId?: string | null
   lastMessageSenderName?: string | null
   lastMessageType?: MessageType | null
-  lastMessageMediaType?: MediaType | null
   lastMessageMediaUrl?: string | null
   lastMessageTime?: string | null
   admins: string[] | null

@@ -1,4 +1,3 @@
-import type { MediaType } from './enum/MediaType'
 import type { MessageType } from './enum/MessageType'
 
 export interface Message {
@@ -8,7 +7,6 @@ export interface Message {
   senderName?: string
   chatId: string
   messageType?: MessageType
-  mediaType?: MediaType | null
   mediaUrl?: string | null
   replyToMessageId?: string | null
   replyToMessageContent?: string | null
