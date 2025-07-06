@@ -65,7 +65,7 @@ const Sidebar = () => {
     const sender = chat.isGroupChat
       ? chat.lastMessageSenderId === authUser?.id
         ? 'You'
-        : `${chat.lastMessageSenderName}`
+        : chat.lastMessageSenderName && chat.lastMessageSenderName
       : chat.lastMessageSenderId === authUser?.id && 'You'
 
     // if (chat.lastMessageType === MessageType.AUDIO) {
@@ -101,6 +101,10 @@ const Sidebar = () => {
     const combined = sender ? `${sender}: ${chat.lastMessageContent}` : chat.lastMessageContent
 
     const preview = combined.length > 33 ? `${combined.slice(0, 30)}...` : combined
+
+    if (chat.lastMessageType === MessageType.SYSTEM) {
+      return <span className="text-accent/90 italic">{preview}</span>
+    }
 
     return <span className="text-base-content/70">{preview}</span>
   }

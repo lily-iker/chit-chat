@@ -124,10 +124,32 @@ const ChatContainer = () => {
 
   const latestSeenByUser = getLatestSeenByUser()
 
-  const shouldShowSeenIndicators = (messageId: string) => {
+  const shouldShowSeenIndicators = (messageId: string, senderId: string) => {
+    const message = selectedChatMessages.find((m) => m.id === messageId)
+    if (!message || !message.readInfo) return []
+
     const seenUsers = Array.from(latestSeenByUser.entries())
       .filter(([_, data]) => data.messageId === messageId)
       .map(([userId]) => userId)
+      .filter((userId) => userId !== senderId) // Exclude the sender from seen indicators
+      .filter((userId) => {
+        // Find when this user read the message
+        const readInfo = message.readInfo?.find((r) => r.userId === userId)
+        if (!readInfo) return false
+
+        const readTime = new Date(readInfo.readAt).getTime()
+
+        // Check if this user sent any message after reading this message
+        const userSentMessageAfterReading = selectedChatMessages.some(
+          (msg) =>
+            msg.senderId === userId &&
+            new Date(msg.createdAt).getTime() > readTime &&
+            msg.messageType !== MessageType.SYSTEM
+        )
+
+        // Only show seen indicator if user hasn't sent a message after reading
+        return !userSentMessageAfterReading
+      })
 
     return seenUsers
   }
@@ -159,7 +181,7 @@ const ChatContainer = () => {
 
         {selectedChatMessages.map((message, index) => {
           const isMyMessage = message.senderId === authUser?.id
-          const seenByUsers = shouldShowSeenIndicators(message.id)
+          const seenByUsers = shouldShowSeenIndicators(message.id, message.senderId ?? '')
 
           // Find the sender's info from chat participants
           const senderInfo = selectedChat?.participantsInfo?.find((p) => p.id === message.senderId)
@@ -329,9 +351,13 @@ const ChatContainer = () => {
               </div>
 
               {/* Seen indicators */}
-              {seenByUsers.length > 0 && isMyMessage && (
-                <div className="flex justify-end mt-1 mr-10">
-                  <div className="flex flex-wrap gap-1 justify-end relative">
+              {seenByUsers.length > 0 && (
+                <div
+                  className={`flex mt-1 ${
+                    isMyMessage ? 'justify-end mr-10' : 'justify-start ml-10'
+                  }`}
+                >
+                  <div className="flex flex-wrap gap-1 relative">
                     {seenByUsers.slice(0, 5).map((userId) => {
                       const participant = selectedChat?.participantsInfo?.find(
                         (p) => p.id === userId
@@ -339,7 +365,9 @@ const ChatContainer = () => {
                       return (
                         <div
                           key={userId}
-                          className="w-4 h-4 rounded-full border-2 border-base-100 tooltip tooltip-left"
+                          className={`w-4 h-4 rounded-full border-2 border-base-100 tooltip ${
+                            isMyMessage ? 'tooltip-left' : 'tooltip-right'
+                          }`}
                           data-tip={`Seen by ${
                             participant?.fullName || 'Unknown'
                           } ${formatMessageTime(
@@ -360,7 +388,9 @@ const ChatContainer = () => {
                     })}
                     {seenByUsers.length > 5 && (
                       <div
-                        className="w-4 h-4 rounded-full bg-base-300 border-2 border-base-100 flex items-center justify-center tooltip tooltip-left"
+                        className={`w-4 h-4 rounded-full bg-base-300 border-2 border-base-100 flex items-center justify-center tooltip ${
+                          isMyMessage ? 'tooltip-left' : 'tooltip-right'
+                        }`}
                         data-tip={`Seen by ${seenByUsers.length} people`}
                       >
                         <span className="text-xs text-base-content font-bold">

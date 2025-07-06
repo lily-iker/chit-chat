@@ -342,7 +342,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           lastMessageSenderName: message.senderName,
           lastMessageTime: message.createdAt,
           lastMessageType: message.messageType,
-          lastMessageMediaType: message.mediaType,
           lastMessageMediaUrl: message.mediaUrl,
         }
 
