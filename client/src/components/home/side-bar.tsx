@@ -1,13 +1,12 @@
-'use client'
-
 import { useChatStore } from '@/store/useChatStore'
 import { useAuthStore } from '@/store/useAuthStore'
-import { Search, Users, Plus, Phone, Video, Settings } from 'lucide-react'
+import { Search, Users, Plus, Settings } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import ChatsSkeleton from './skeleton/chats-skeleton'
 import type { Chat } from '@/types/Chat'
 import { formatChatTime } from '@/utils/timeUtils'
+import { MessageType } from '@/types/enum/MessageType'
 
 const Sidebar = () => {
   const {
@@ -63,37 +62,41 @@ const Sidebar = () => {
   )
 
   const getMessagePreview = (chat: Chat) => {
-    if (!chat.lastMessageContent) return null
-
-    // if (chat.lastMessageMediaType === 'VOICE') {
-    //   return (
-    //     <div className="flex items-center gap-1 text-base-content/70">
-    //       <Phone className="w-3 h-3" />
-    //       <span>Voice Message</span>
-    //     </div>
-    //   )
-    // } else
-    if (chat.lastMessageMediaType === 'IMAGE') {
-      return (
-        <div className="flex items-center gap-1 text-base-content/70">
-          <span className="text-base-content/70">📷 Photo</span>
-        </div>
-      )
-    } else if (chat.lastMessageMediaType === 'VIDEO') {
-      return (
-        <div className="flex items-center gap-1 text-base-content/70">
-          <Video className="w-3 h-3" />
-          <span>Video</span>
-        </div>
-      )
-    }
-
-    // Regular text message
     const sender = chat.isGroupChat
       ? chat.lastMessageSenderId === authUser?.id
         ? 'You'
         : `${chat.lastMessageSenderName}`
       : chat.lastMessageSenderId === authUser?.id && 'You'
+
+    // if (chat.lastMessageType === MessageType.AUDIO) {
+    //   return (
+    //     <div className="flex items-center gap-1 text-base-content/70">
+    //       <span>{sender} send an audio 🎶</span>
+    //     </div>
+    //   )
+    // } else
+    if (chat.lastMessageType === MessageType.IMAGE) {
+      return (
+        <div className="flex items-center gap-1 text-base-content/70">
+          <span>{sender} send an image 🖼</span>
+        </div>
+      )
+    } else if (chat.lastMessageType === MessageType.VIDEO) {
+      return (
+        <div className="flex items-center gap-1 text-base-content/70">
+          <span>{sender} send a video 🎬</span>
+        </div>
+      )
+    } else if (chat.lastMessageType === MessageType.GIF) {
+      return (
+        <div className="flex items-center gap-1 text-base-content/70">
+          <span>{sender} send a GIF 👾</span>
+        </div>
+      )
+    }
+
+    // Regular text message
+    if (!chat.lastMessageContent) return null
 
     const combined = sender ? `${sender}: ${chat.lastMessageContent}` : chat.lastMessageContent
 
@@ -225,7 +228,7 @@ const Sidebar = () => {
                               </div>
                             </div>
                           </div>
-                        ) : chat.lastMessageContent ? (
+                        ) : chat.lastMessageType ? (
                           getMessagePreview(chat)
                         ) : (
                           <span className="text-base-content/50 italic">No messages yet</span>
