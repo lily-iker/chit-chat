@@ -94,7 +94,6 @@ public class ChatMapper {
         ChatResponse chatResponse = ChatResponse.builder()
                 .id(chat.getId())
                 .name(chat.getName())
-                .chatImageUrl(chat.getChatImageUrl())
                 .isGroupChat(chat.getIsGroupChat())
                 .lastMessageContent(chat.getLastMessageContent())
                 .lastMessageSenderId(chat.getLastMessageSenderId())
@@ -102,10 +101,8 @@ public class ChatMapper {
                 .lastMessageType(chat.getLastMessageType())
                 .lastMessageMediaUrl(chat.getLastMessageMediaUrl())
                 .lastMessageTime(chat.getLastMessageTime())
-                .admins(chat.getAdmins())
                 .createdAt(chat.getCreatedAt())
                 .updatedAt(chat.getUpdatedAt())
-                .createdBy(chat.getCreatedBy())
                 .build();
 
         // If it's a one-on-one chat, extract other user info
@@ -121,6 +118,10 @@ public class ChatMapper {
                 chatResponse.setName(otherUser.getFullName());
                 chatResponse.setChatImageUrl(mediaUtils.resolveMediaUrl(otherUser.getProfileImageUrl()));
             }
+        }
+        // For group chats, set the chat image URL if available
+        else {
+            chatResponse.setChatImageUrl(mediaUtils.resolveMediaUrl(chat.getChatImageUrl()));
         }
 
         MessageReadInfo lastReadInfo = messageReadInfoRepository

@@ -17,6 +17,7 @@ import chitchat.model.*;
 import chitchat.model.enumeration.MessageType;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.*;
+import chitchat.service.MinioService;
 import chitchat.service.interfaces.ChatService;
 import chitchat.service.interfaces.NotificationService;
 import chitchat.service.interfaces.UserService;
@@ -54,10 +55,11 @@ public class ChatServiceImpl implements ChatService {
     private final MessageMapper messageMapper;
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
+    private final MinioService minioService;
 
     @Override
     @Transactional
-    public ChatResponse createChat(CreateChatRequest createChatRequest, MultipartFile chatImageFile) {
+    public ChatResponse createChat(CreateChatRequest createChatRequest, MultipartFile chatImageFile) throws Exception {
 
         if (createChatRequest.getParticipants().size() < PRIVATE_CHAT_PARTICIPANTS) {
             throw new InvalidDataException("A chat must have at least " + PRIVATE_CHAT_PARTICIPANTS + " participants");
@@ -68,6 +70,17 @@ public class ChatServiceImpl implements ChatService {
         }
 
         CustomUserDetails currentUser = userService.getCurrentUser();
+
+        // Ensure the current user is in the participants list
+        if (!createChatRequest.getParticipants().contains(currentUser.getUser().getId())) {
+            throw new InvalidDataException("You must be a participant of the chat");
+        }
+
+        // Ensure the participants list does not contain duplicates
+        Set<String> uniqueParticipants = new HashSet<>(createChatRequest.getParticipants());
+        if (uniqueParticipants.size() != createChatRequest.getParticipants().size()) {
+            throw new InvalidDataException("Participants list contains duplicates");
+        }
 
         // Check if the chat is a private chat
         // If there are only 2 participants, we can consider it a private chat
@@ -88,9 +101,11 @@ public class ChatServiceImpl implements ChatService {
                 Message initMessage = Message.builder()
                         .chatId(newPrivateChat.getId())
                         .messageType(MessageType.SYSTEM)
-                        .content("New private chat created by " + currentUser.getUser().getFullName())
+                        .content("You can now chat with each other")
                         .build();
                 messageRepository.save(initMessage);
+
+                updateChatLastMessage(newPrivateChat, initMessage, null);
 
                 // Save chat join info for all participants
                 saveChatJoinInfo(newPrivateChat, currentUser, createChatRequest.getParticipants());
@@ -109,8 +124,7 @@ public class ChatServiceImpl implements ChatService {
         newGroupChat.setCreatedBy(currentUser.getUser().getId());
 
         if (chatImageFile != null) {
-            // TODO: upload image and set the URL
-            String chatImageUrl = "hehe";
+            String chatImageUrl = minioService.uploadFileToPublicBucket(chatImageFile);
             newGroupChat.setChatImageUrl(chatImageUrl);
         }
 
@@ -122,6 +136,8 @@ public class ChatServiceImpl implements ChatService {
                 .content("New group chat created by " + currentUser.getUser().getFullName())
                 .build();
         messageRepository.save(initMessage);
+
+        updateChatLastMessage(newGroupChat, initMessage, null);
 
         // Save chat join info for all participants
         saveChatJoinInfo(newGroupChat, currentUser, createChatRequest.getParticipants());
@@ -653,10 +669,12 @@ public class ChatServiceImpl implements ChatService {
     public void updateChatLastMessage(Chat chat, Message lastMessage, User sender) {
         chat.setLastMessageId(lastMessage.getId());
         chat.setLastMessageContent(lastMessage.getContent());
-        chat.setLastMessageSenderId(sender.getId());
-        chat.setLastMessageSenderName(sender.getFullName());
         chat.setLastMessageType(lastMessage.getMessageType());
         chat.setLastMessageTime(lastMessage.getCreatedAt());
+        if (sender != null) {
+            chat.setLastMessageSenderId(sender.getId());
+            chat.setLastMessageSenderName(sender.getFullName());
+        }
 
         chatRepository.save(chat);
     }

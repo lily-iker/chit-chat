@@ -24,7 +24,7 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<?> createChat(@RequestPart @Valid CreateChatRequest createChatRequest,
-                                        @RequestPart(value = "chatImageFile", required = false) MultipartFile chatImageFile) {
+                                        @RequestPart(value = "chatImageFile", required = false) MultipartFile chatImageFile) throws Exception {
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
                         "Chat created successfully",

@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface ChatService {
-    ChatResponse createChat(CreateChatRequest createChatRequest, MultipartFile chatImageFile);
+    ChatResponse createChat(CreateChatRequest createChatRequest, MultipartFile chatImageFile) throws Exception;
     ChatResponse getChat(String chatId);
     ChatResponse updateChat(String chatId, UpdateChatRequest updateChatRequest, MultipartFile chatImageFile);
     void deleteChat(String chatId);
