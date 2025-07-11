@@ -16,4 +16,8 @@ public class MediaUtils {
                 ? mediaBaseUrl + (mediaBaseUrl.endsWith("/") ? "" : "/") + path
                 : null;
     }
+
+    public boolean isExternalUrl(String url) {
+        return url != null && (url.startsWith("http://") || url.startsWith("https://"));
+    }
 }

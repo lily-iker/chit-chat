@@ -4,9 +4,9 @@ import chitchat.dto.response.message.MessageReadInfoResponse;
 import chitchat.dto.response.message.MessageResponse;
 import chitchat.model.Message;
 import chitchat.model.MessageReadInfo;
-import chitchat.model.enumeration.MessageType;
 import chitchat.repository.MessageReadInfoRepository;
 import chitchat.service.MinioService;
+import chitchat.utils.MediaUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,13 +20,15 @@ public class MessageMapper {
 
     private final MessageReadInfoRepository messageReadInfoRepository;
     private final MinioService minioService;
+    private final MediaUtils mediaUtils;
 
     public MessageResponse toMessageResponse(Message message) throws Exception {
         String mediaUrl = message.getMediaUrl();
-        if (message.getMediaUrl() != null
-                && !message.getMediaUrl().isEmpty()
-                && !message.getMessageType().equals(MessageType.GIF)) {
-            mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
+        if (mediaUrl != null && !mediaUrl.isEmpty()) {
+            boolean isExternalUrl = mediaUtils.isExternalUrl(mediaUrl);
+            if (!isExternalUrl) {
+                mediaUrl = minioService.getPresignedUrl(mediaUrl);
+            }
         }
 
         return MessageResponse.builder()
@@ -64,13 +66,14 @@ public class MessageMapper {
         return messages.stream()
                 .map(message -> {
                     String mediaUrl = message.getMediaUrl();
-                    if (message.getMediaUrl() != null
-                            && !message.getMediaUrl().isEmpty()
-                            && !message.getMessageType().equals(MessageType.GIF)) {
-                        try {
-                            mediaUrl = minioService.getPresignedUrl(message.getMediaUrl());
-                        } catch (Exception e) {
-                            mediaUrl = message.getMediaUrl(); // Fallback to original URL if presigned URL fails
+                    if (mediaUrl != null && !mediaUrl.isEmpty()) {
+                        boolean isExternalUrl = mediaUtils.isExternalUrl(mediaUrl);
+                        if (!isExternalUrl) {
+                            try {
+                                mediaUrl = minioService.getPresignedUrl(mediaUrl);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
 
