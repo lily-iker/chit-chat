@@ -2,3 +2,7 @@
 @plugin "daisyui" {
   themes: all;
 }
+
+[data-theme] * {
+  transition: background-color 0.5s, color 0.5s, border-color 0.5s;
+}
