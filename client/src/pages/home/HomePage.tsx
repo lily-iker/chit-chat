@@ -5,6 +5,7 @@ import ChatList from '@/components/home/chat-list'
 import { useChatStore } from '@/store/useChatStore'
 import useIsMobile from '@/hooks/useIsMobile'
 import { useEffect } from 'react'
+import VideoCallModal from '@/components/home/video-call-modal'
 
 const HomePage = () => {
   const { selectedChat, getChats } = useChatStore()
@@ -46,6 +47,8 @@ const HomePage = () => {
                 <ChatContainer />
               </div>
             )}
+
+            <VideoCallModal />
           </div>
         </div>
       </div>

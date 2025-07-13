@@ -35,3 +35,7 @@ minio:
 redis:
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}
+
+stream:
+  apiKey: ${STREAM_API_KEY}
+  secretKey: ${STREAM_SECRET_KEY}
