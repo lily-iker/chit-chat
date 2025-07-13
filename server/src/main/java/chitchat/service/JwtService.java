@@ -3,24 +3,23 @@ package chitchat.service;
 import chitchat.model.enumeration.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.*;
 import java.util.function.Function;
 
-@Component
+@Service
 public class JwtService {
 
     private static final String ISSUER = "https://github.com/lily-iker";
     private static final String SCOPE = "scope";
-    private static final SignatureAlgorithm SIGNATURE_ALGORITHM = SignatureAlgorithm.HS256;
 
     @Value("${jwt.accessExpiryTime}")
     private int accessExpiryTime;
@@ -35,32 +34,29 @@ public class JwtService {
     private String refreshKey;
 
     public String generateAccessToken(UserDetails userDetails) {
-        return generateAccessToken(Map.of(SCOPE, buildScope(userDetails.getAuthorities())), userDetails);
-    }
-
-    public String generateAccessToken(Map<String, Object> claims, UserDetails userDetails) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setIssuer(ISSUER)
-                .setExpiration(new Date(System.currentTimeMillis() + accessExpiryTime))
-                .signWith(getKey(TokenType.ACCESS_TOKEN), SIGNATURE_ALGORITHM)
-                .compact();
+        return generateToken(Map.of(SCOPE, buildScope(userDetails.getAuthorities())),
+                userDetails,
+                TokenType.ACCESS_TOKEN,
+                accessExpiryTime
+        );
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateRefreshToken(new HashMap<>(), userDetails);
+        return generateToken(new HashMap<>(),
+                userDetails,
+                TokenType.REFRESH_TOKEN,
+                refreshExpiryTime
+        );
     }
 
-    public String generateRefreshToken(Map<String, Object> claims, UserDetails userDetails) {
+    public String generateToken(Map<String, Object> claims, UserDetails userDetails, TokenType tokenType, int expiryTime) {
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setIssuer(ISSUER)
-                .setExpiration(new Date(System.currentTimeMillis() + refreshExpiryTime))
-                .signWith(getKey(TokenType.REFRESH_TOKEN), SIGNATURE_ALGORITHM)
+                .claims(claims)
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .issuer(ISSUER)
+                .expiration(new Date(System.currentTimeMillis() + expiryTime))
+                .signWith(getKey(tokenType))
                 .compact();
     }
 
@@ -85,17 +81,20 @@ public class JwtService {
         if (TokenType.ACCESS_TOKEN.equals(tokenType)){
             return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
         }
-        else{
+        else if (TokenType.REFRESH_TOKEN.equals(tokenType)) {
             return Keys.hmacShaKeyFor(Decoders.BASE64.decode(refreshKey));
+        }
+        else {
+            throw new IllegalArgumentException("Invalid token type: " + tokenType);
         }
     }
 
     private <T> T extractClaims(String token, TokenType tokenType, Function<Claims, T> claimsResolver) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getKey(tokenType))
+        Claims claims = Jwts.parser()
+                .verifyWith((SecretKey) getKey(tokenType))
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
 
         return claimsResolver.apply(claims);
     }
