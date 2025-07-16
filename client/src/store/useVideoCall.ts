@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { StreamVideoClient, type Call } from '@stream-io/video-react-sdk'
 import axios from '@/lib/axios-custom'
 import { useChatStore } from '@/store/useChatStore'
+import { useAuthStore } from './useAuthStore'
 
 type VideoCallState = {
   client: StreamVideoClient | null
@@ -35,8 +36,7 @@ export const useVideoCallStore = create<VideoCallState>((set, get) => ({
     }
 
     try {
-      const authStore = await import('@/store/useAuthStore')
-      const { authUser } = authStore.useAuthStore.getState()
+      const { authUser } = useAuthStore.getState()
 
       if (!authUser) {
         throw new Error('User not authenticated')
