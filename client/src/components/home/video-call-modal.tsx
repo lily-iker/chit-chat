@@ -1,5 +1,7 @@
+'use client'
+
 import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { X, Minimize2 } from 'lucide-react'
 import { useVideoCallStore } from '@/store/useVideoCall'
 import { useChatStore } from '@/store/useChatStore'
 import {
@@ -16,7 +18,6 @@ import '@stream-io/video-react-sdk/dist/css/styles.css'
 const VideoCallContent = () => {
   const { useCallCallingState } = useCallStateHooks()
   const callingState = useCallCallingState()
-
   const { endCall } = useVideoCallStore()
 
   useEffect(() => {
@@ -34,23 +35,27 @@ const VideoCallContent = () => {
 }
 
 const VideoCallModal = () => {
-  const { client, call, isCallActive, endCall } = useVideoCallStore()
+  const { client, call, isCallActive, isPiPMode, endCall, togglePiPMode } = useVideoCallStore()
   const { selectedChat } = useChatStore()
   const modalRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
-    if (isCallActive && modalRef.current) {
+    if (isCallActive && !isPiPMode && modalRef.current) {
       modalRef.current.showModal()
     } else if (modalRef.current) {
       modalRef.current.close()
     }
-  }, [isCallActive])
+  }, [isCallActive, isPiPMode])
 
   const handleClose = () => {
     endCall()
   }
 
-  if (!client || !call || !isCallActive) return null
+  const handlePiPMode = () => {
+    togglePiPMode()
+  }
+
+  if (!client || !call || !isCallActive || isPiPMode) return null
 
   return (
     <dialog ref={modalRef} className="modal modal-open">
@@ -68,9 +73,18 @@ const VideoCallModal = () => {
               <p className="text-sm text-base-content/70">Video Call</p>
             </div>
           </div>
-          <button onClick={handleClose} className="btn btn-sm btn-ghost btn-circle">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="tooltip tooltip-bottom" data-tip="Picture in Picture">
+              <button onClick={handlePiPMode} className="btn btn-sm btn-ghost">
+                <Minimize2 className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="tooltip tooltip-bottom" data-tip="End call">
+              <button onClick={handleClose} className="btn btn-sm btn-ghost btn-circle text-error">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Video Call Content */}

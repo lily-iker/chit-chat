@@ -8,10 +8,15 @@ type VideoCallState = {
   client: StreamVideoClient | null
   call: Call | null
   isCallActive: boolean
+  currentChatId: string | null
+  isPiPMode: boolean
+  pipPosition: { x: number; y: number }
   setClient: (client: StreamVideoClient) => void
   setCall: (call: Call) => void
   startCall: (callId: string) => Promise<void>
   endCall: () => void
+  togglePiPMode: () => void
+  setPiPPosition: (position: { x: number; y: number }) => void
   cleanup: () => void
 }
 
@@ -19,6 +24,9 @@ export const useVideoCallStore = create<VideoCallState>((set, get) => ({
   client: null,
   call: null,
   isCallActive: false,
+  currentChatId: null,
+  isPiPMode: false,
+  pipPosition: { x: 20, y: 20 }, // Distance from bottom-right corner
 
   setClient: (client) => set({ client }),
   setCall: (call) => set({ call }),
@@ -66,6 +74,7 @@ export const useVideoCallStore = create<VideoCallState>((set, get) => ({
       set({
         call: newCall,
         isCallActive: true,
+        currentChatId: selectedChat.id,
       })
     } catch (error) {
       console.error('Failed to start call:', error)
@@ -81,22 +90,36 @@ export const useVideoCallStore = create<VideoCallState>((set, get) => ({
     set({
       call: null,
       isCallActive: false,
+      currentChatId: null,
+      isPiPMode: false,
     })
+  },
+
+  togglePiPMode: () => {
+    set((state) => ({ isPiPMode: !state.isPiPMode }))
+  },
+
+  setPiPPosition: (position) => {
+    set({ pipPosition: position })
   },
 
   cleanup: () => {
     console.log('Cleaning up video call store')
     const { client, call } = get()
+
     if (call) {
       call.leave().catch(console.error)
     }
     if (client) {
       client.disconnectUser().catch(console.error)
     }
+
     set({
       client: null,
       call: null,
       isCallActive: false,
+      currentChatId: null,
+      isPiPMode: false,
     })
   },
 }))

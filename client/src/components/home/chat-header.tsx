@@ -1,4 +1,4 @@
-import { ChevronLeft, X, Video, VideoOff } from 'lucide-react'
+import { ChevronLeft, X, Video, VideoOff, Maximize2 } from 'lucide-react'
 import { useChatStore } from '@/store/useChatStore'
 import { useVideoCallStore } from '@/store/useVideoCall'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -6,7 +6,8 @@ import toast from 'react-hot-toast'
 
 const ChatHeader = () => {
   const { selectedChat, setSelectedChat, unsubscribe } = useChatStore()
-  const { call, isCallActive, startCall, endCall } = useVideoCallStore()
+  const { call, isCallActive, currentChatId, isPiPMode, startCall, endCall, togglePiPMode } =
+    useVideoCallStore()
   const { authUser } = useAuthStore()
 
   const handleClose = () => {
@@ -27,10 +28,8 @@ const ChatHeader = () => {
     }
 
     try {
-      // Generate a unique call ID based on chat ID and timestamp
       const callId = `${selectedChat.id}`
       await startCall(callId)
-      toast.success('Video call started')
     } catch (error) {
       console.error('Failed to start video call:', error)
       toast.error('Failed to start video call')
@@ -39,7 +38,10 @@ const ChatHeader = () => {
 
   const handleEndCall = () => {
     endCall()
-    toast.success('Video call ended')
+  }
+
+  const handleTogglePiP = () => {
+    togglePiPMode()
   }
 
   if (!selectedChat) return null
@@ -62,24 +64,41 @@ const ChatHeader = () => {
           {/* Chat name and status */}
           <div className="min-w-0">
             <h3 className="font-medium truncate">{selectedChat.name}</h3>
-            {/* <p className="text-sm text-base-content/70">Online</p> */}
+            {isCallActive && currentChatId === selectedChat.id && (
+              <p className="text-sm text-success">Video calling</p>
+            )}
           </div>
         </div>
 
-        {/* Right section: Video call button and close button */}
+        {/* Right section: Video call controls and close button */}
         <div className="flex items-center gap-2">
-          {/* Video call button */}
-          <div
-            className="tooltip tooltip-bottom"
-            data-tip={isCallActive ? 'End video call' : 'Start video call'}
-          >
-            <button
-              onClick={isCallActive ? handleEndCall : handleVideoCall}
-              className={`btn btn-sm btn-ghost ${isCallActive ? 'text-error' : 'text-primary'}`}
-            >
-              {isCallActive ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-            </button>
-          </div>
+          {/* Video call controls */}
+          {isCallActive && currentChatId === selectedChat.id ? (
+            <>
+              {/* PiP toggle button */}
+              <div
+                className="tooltip tooltip-bottom"
+                data-tip={isPiPMode ? 'Expand video call' : 'Picture in Picture'}
+              >
+                <button onClick={handleTogglePiP} className="btn btn-sm btn-ghost">
+                  <Maximize2 className="w-5 h-5" />
+                </button>
+              </div>
+              {/* End call button */}
+              <div className="tooltip tooltip-bottom" data-tip="End video call">
+                <button onClick={handleEndCall} className="btn btn-sm btn-ghost text-error">
+                  <VideoOff className="w-5 h-5" />
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Start call button */
+            <div className="tooltip tooltip-bottom" data-tip="Start video call">
+              <button onClick={handleVideoCall} className="btn btn-sm btn-ghost text-primary">
+                <Video className="w-5 h-5" />
+              </button>
+            </div>
+          )}
 
           {/* Close button (optional, visible on desktop or for additional actions) */}
           <button

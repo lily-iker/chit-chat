@@ -6,6 +6,7 @@ import { useChatStore } from '@/store/useChatStore'
 import useIsMobile from '@/hooks/useIsMobile'
 import { useEffect } from 'react'
 import VideoCallModal from '@/components/home/video-call-modal'
+import VideoCallPiP from '@/components/home/video-call-pip'
 
 const HomePage = () => {
   const { selectedChat, getChats } = useChatStore()
@@ -49,6 +50,7 @@ const HomePage = () => {
             )}
 
             <VideoCallModal />
+            <VideoCallPiP />
           </div>
         </div>
       </div>
