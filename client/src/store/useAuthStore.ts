@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import axios from '@/lib/axios-custom'
 import toast from 'react-hot-toast'
 import type { AuthUser } from '@/types/AuthUser'
+import { useMessageStore } from './useMessageStore'
+import { useChatStore } from './useChatStore'
+import { useNotificationStore } from './useNotificationStore'
+import { useVideoCallStore } from './useVideoCall'
+import { useWebSocketStore } from './useWebSocketStore'
 
 type AuthState = {
   authUser: AuthUser | null
@@ -22,9 +27,10 @@ type AuthState = {
   logout: () => Promise<void>
   forgotPassword: (email: string) => Promise<void>
   resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>
+  cleanup: () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   authUser: null,
   isAuthLoading: false,
   isLoading: false,
@@ -114,7 +120,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       await axios.post('/api/v1/auth/logout')
-      set({ authUser: null })
+
+      get().cleanup()
+      useMessageStore.getState().cleanup()
+      useChatStore.getState().cleanup()
+      useNotificationStore.getState().cleanup()
+      useVideoCallStore.getState().cleanup()
+      useWebSocketStore.getState().cleanup()
+
       toast.success('Logged out successfully')
     } catch (error: unknown) {
       console.log(error)
@@ -163,4 +176,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ isLoading: false })
     }
   },
+
+  cleanup: () =>
+    set({
+      authUser: null,
+      isAuthLoading: false,
+      isLoading: false,
+      error: null,
+    }),
 }))

@@ -5,6 +5,8 @@ import toast from 'react-hot-toast'
 type MessageState = {
   isLoading: boolean
   sendMessage: (formdata: FormData) => Promise<void>
+
+  cleanup: () => void
 }
 
 export const useMessageStore = create<MessageState>((set) => ({
@@ -21,4 +23,9 @@ export const useMessageStore = create<MessageState>((set) => ({
       set({ isLoading: false })
     }
   },
+
+  cleanup: () =>
+    set({
+      isLoading: false,
+    }),
 }))

@@ -8,6 +8,8 @@ type WebSocketState = {
 
   connect: () => void
   disconnect: () => void
+
+  cleanup: () => void
 }
 
 let didSubscribeToNotifications = false
@@ -60,5 +62,10 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
     set({ client: null })
 
     didSubscribeToNotifications = false
+  },
+
+  cleanup: () => {
+    get().disconnect()
+    set({ client: null })
   },
 }))

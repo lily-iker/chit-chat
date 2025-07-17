@@ -10,7 +10,6 @@ import HomePage from '@/pages/home/HomePage'
 import SetupBasicInfoPage from '@/pages/auth/SetupBasicInfoPage'
 import AuthLayout from '@/components/layout/AuthLayout'
 import { useWebSocketStore } from './store/useWebSocketStore'
-import { useVideoCallStore } from './store/useVideoCall'
 
 function App() {
   const { authUser, fetchAuthUser } = useAuthStore()
@@ -47,14 +46,6 @@ function App() {
       disconnect()
     }
   }, [isAuthenticated, isProfileCompleted, connect, disconnect])
-
-  useEffect(() => {
-    const { cleanup } = useVideoCallStore.getState()
-
-    if (!authUser) {
-      cleanup()
-    }
-  }, [authUser])
 
   if (isLoading) {
     return <Loading />

@@ -104,7 +104,6 @@ export const useVideoCallStore = create<VideoCallState>((set, get) => ({
   },
 
   cleanup: () => {
-    console.log('Cleaning up video call store')
     const { client, call } = get()
 
     if (call) {

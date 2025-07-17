@@ -21,6 +21,8 @@ interface NotificationState {
   addNotification: (notification: Notification) => void
   clearNotifications: () => void
   clearChatTypingUser: (chatId: string, userId: string) => void // New method
+
+  cleanup: () => void
 }
 
 let notificationSubscription: any = null
@@ -217,5 +219,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       notificationSubscription.unsubscribe()
       notificationSubscription = null
     }
+  },
+
+  cleanup: () => {
+    set({
+      notifications: [],
+      chatTypingTimeouts: {},
+    })
   },
 }))

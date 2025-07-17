@@ -39,6 +39,8 @@ interface ChatState {
 
   subscribe: (chatId: string) => void
   unsubscribe: () => void
+
+  cleanup: () => void
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -403,4 +405,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
       typingTimeouts: {},
     })
   },
+
+  cleanup: () =>
+    set({
+      selectedChat: null,
+      selectedChatMessages: [],
+      chats: [],
+      isSelectedChatMessagesLoading: false,
+      isChatsLoading: false,
+      isLoadingMoreMessages: false,
+      isLoadingMoreChats: false,
+      hasMoreMessages: true,
+      hasMoreChats: true,
+      chatSubscription: null,
+      currentSubscribedChatId: null,
+      oldestLoadedChatId: null,
+      oldestLoadedMessageId: null,
+      typingUserIds: [],
+      typingTimeouts: {},
+    }),
 }))
