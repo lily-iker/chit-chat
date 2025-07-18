@@ -7,6 +7,7 @@ import type { Chat } from '@/types/Chat'
 import { Link } from 'react-router'
 import { formatChatTime } from '@/utils/timeUtils'
 import { MessageType } from '@/types/enum/MessageType'
+import ChatsSkeleton from './skeleton/chats-skeleton'
 
 const ChatList = () => {
   const {
@@ -158,18 +159,7 @@ const ChatList = () => {
         className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-transparent"
       >
         {isChatsLoading ? (
-          // Loading skeleton
-          <div className="space-y-1 p-2">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <div key={index} className="flex items-center gap-3 p-2 animate-pulse">
-                <div className="w-12 h-12 bg-base-300 rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-base-300 rounded w-3/4"></div>
-                  <div className="h-3 bg-base-300 rounded w-1/2"></div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ChatsSkeleton />
         ) : filteredChats.length === 0 ? (
           // Empty state
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
