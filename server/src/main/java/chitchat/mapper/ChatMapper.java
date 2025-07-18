@@ -84,6 +84,7 @@ public class ChatMapper {
                                     .build())
                     .toList();
 
+            chatResponse.setChatImageUrl(mediaUtils.resolveMediaUrl(chat.getChatImageUrl()));
             chatResponse.setParticipantsInfo(participantDetails);
         }
 
