@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import ChatsSkeleton from './skeleton/chats-skeleton'
 import type { Chat } from '@/types/Chat'
-import { formatChatTime } from '@/utils/timeUtils'
 import { MessageType } from '@/types/enum/MessageType'
+import ChatTime from './chat-time'
 
 const Sidebar = () => {
   const {
@@ -202,13 +202,14 @@ const Sidebar = () => {
                       >
                         {chat.name || 'Unknown Chat'}
                       </h3>
-                      <span
-                        className={`text-xs ${
-                          chat.unreadMessageCount ? 'text-base-content' : 'text-base-content/60'
-                        }`}
-                      >
-                        {chat.lastMessageTime && formatChatTime(chat.lastMessageTime)}
-                      </span>
+                      {chat.lastMessageTime && (
+                        <ChatTime
+                          timestamp={chat.lastMessageTime}
+                          className={`text-xs ${
+                            chat.unreadMessageCount ? 'text-base-content' : 'text-base-content/60'
+                          }`}
+                        />
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between mt-0.5">

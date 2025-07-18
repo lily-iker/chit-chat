@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import type { Chat } from '@/types/Chat'
 import { Link } from 'react-router'
-import { formatChatTime } from '@/utils/timeUtils'
 import { MessageType } from '@/types/enum/MessageType'
 import ChatsSkeleton from './skeleton/chats-skeleton'
+import ChatTime from './chat-time'
 
 const ChatList = () => {
   const {
@@ -213,13 +213,14 @@ const ChatList = () => {
                       >
                         {chat.name || 'Unknown Chat'}
                       </h3>
-                      <span
-                        className={`text-xs ${
-                          chat.unreadMessageCount ? 'text-base-content' : 'text-base-content/60'
-                        }`}
-                      >
-                        {chat.lastMessageTime && formatChatTime(chat.lastMessageTime)}
-                      </span>
+                      {chat.lastMessageTime && (
+                        <ChatTime
+                          timestamp={chat.lastMessageTime}
+                          className={`text-xs ${
+                            chat.unreadMessageCount ? 'text-base-content' : 'text-base-content/60'
+                          }`}
+                        />
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between mt-0.5">

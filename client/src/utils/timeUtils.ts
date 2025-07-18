@@ -3,7 +3,9 @@ export const formatChatTime = (timestamp: string) => {
   const now = new Date()
   const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
 
-  if (diffInMinutes < 60) {
+  if (diffInMinutes < 1) {
+    return 'now'
+  } else if (diffInMinutes < 60) {
     return `${Math.floor(diffInMinutes)}m`
   } else if (diffInMinutes < 24 * 60) {
     return `${Math.floor(diffInMinutes / 60)}h`
