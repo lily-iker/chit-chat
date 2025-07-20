@@ -7,6 +7,7 @@ import { useChatStore } from './useChatStore'
 import { useNotificationStore } from './useNotificationStore'
 import { useVideoCallStore } from './useVideoCall'
 import { useWebSocketStore } from './useWebSocketStore'
+import { useRelationshipStore } from './useRelationshipStore'
 
 type AuthState = {
   authUser: AuthUser | null
@@ -127,6 +128,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useNotificationStore.getState().cleanup()
       useVideoCallStore.getState().cleanup()
       useWebSocketStore.getState().cleanup()
+      useRelationshipStore.getState().cleanup()
 
       toast.success('Logged out successfully')
     } catch (error: unknown) {

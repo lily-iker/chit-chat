@@ -10,6 +10,7 @@ import HomePage from '@/pages/home/HomePage'
 import SetupBasicInfoPage from '@/pages/auth/SetupBasicInfoPage'
 import AuthLayout from '@/components/layout/AuthLayout'
 import { useWebSocketStore } from './store/useWebSocketStore'
+import FriendsPage from './pages/friend/FriendPage'
 
 function App() {
   const { authUser, fetchAuthUser } = useAuthStore()
@@ -70,6 +71,17 @@ function App() {
             element={
               isAuthenticated && isProfileCompleted ? (
                 <SetupBasicInfoPage />
+              ) : (
+                <Navigate to={!isAuthenticated ? '/login' : '/setup-info'} />
+              )
+            }
+          />
+
+          <Route
+            path="/friends"
+            element={
+              isAuthenticated && isProfileCompleted ? (
+                <FriendsPage />
               ) : (
                 <Navigate to={!isAuthenticated ? '/login' : '/setup-info'} />
               )
