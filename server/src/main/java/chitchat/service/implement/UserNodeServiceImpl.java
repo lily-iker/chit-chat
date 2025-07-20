@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -128,7 +129,7 @@ public class UserNodeServiceImpl implements UserNodeService {
             allFriendIds = new HashSet<>(userNodeRepository.findFriendIds(userId));
 
             // Only cache if we have a reasonable number of friends
-            if (allFriendIds.size() <= CacheConstant.MAX_FRIENDS_TO_CACHE) {
+            if (!allFriendIds.isEmpty() && allFriendIds.size() <= CacheConstant.MAX_FRIENDS_TO_CACHE) {
                 redisTemplate.opsForSet().add(cacheKey, allFriendIds.toArray(new String[0]));
                 redisTemplate.expire(cacheKey, CacheConstant.FRIENDS_CACHE_TTL);
             }
@@ -166,7 +167,7 @@ public class UserNodeServiceImpl implements UserNodeService {
         if (allBlockedIds == null || allBlockedIds.isEmpty()) {
             allBlockedIds = new HashSet<>(userNodeRepository.findBlockedUserIds(userId));
 
-            if (allBlockedIds.size() <= CacheConstant.MAX_BLOCKED_USERS_TO_CACHE) {
+            if (!allBlockedIds.isEmpty() && allBlockedIds.size() <= CacheConstant.MAX_BLOCKED_USERS_TO_CACHE) {
                 redisTemplate.opsForSet().add(cacheKey, allBlockedIds.toArray(new String[0]));
                 redisTemplate.expire(cacheKey, CacheConstant.BLOCKED_CACHE_TTL);
             }
@@ -202,7 +203,7 @@ public class UserNodeServiceImpl implements UserNodeService {
         if (allIncomingIds == null || allIncomingIds.isEmpty()) {
             allIncomingIds = new HashSet<>(userNodeRepository.getIncomingFriendRequestIds(userId));
 
-            if (allIncomingIds.size() <= CacheConstant.MAX_INCOMING_REQUESTS_TO_CACHE) {
+            if (!allIncomingIds.isEmpty() && allIncomingIds.size() <= CacheConstant.MAX_INCOMING_REQUESTS_TO_CACHE) {
                 redisTemplate.opsForSet().add(cacheKey, allIncomingIds.toArray(new String[0]));
                 redisTemplate.expire(cacheKey, CacheConstant.INCOMING_REQUESTS_CACHE_TTL);
             }
@@ -238,7 +239,7 @@ public class UserNodeServiceImpl implements UserNodeService {
         if (allSentIds == null || allSentIds.isEmpty()) {
             allSentIds = new HashSet<>(userNodeRepository.getSentFriendRequestIds(userId));
 
-            if (allSentIds.size() <= CacheConstant.MAX_SENT_REQUESTS_TO_CACHE) {
+            if (!allSentIds.isEmpty() && allSentIds.size() <= CacheConstant.MAX_SENT_REQUESTS_TO_CACHE) {
                 redisTemplate.opsForSet().add(cacheKey, allSentIds.toArray(new String[0]));
                 redisTemplate.expire(cacheKey, CacheConstant.SENT_REQUESTS_CACHE_TTL);
             }
@@ -349,7 +350,8 @@ public class UserNodeServiceImpl implements UserNodeService {
 
         for (int i = 0; i < userIds.size(); i++) {
             if (cached.get(i) != null) {
-                results.put(userIds.get(i), (UserProfileResponse) cached.get(i));
+                UserProfileResponse profile = objectMapper.convertValue(cached.get(i), UserProfileResponse.class);
+                results.put(userIds.get(i), profile);
             } else {
                 missingIds.add(userIds.get(i));
             }
@@ -396,6 +398,7 @@ public class UserNodeServiceImpl implements UserNodeService {
         return (pageNumber - 1) * pageSize;
     }
 
+    @Async
     private void onRelationshipChange(String currentUserId, String targetUserId) {
         invalidateSearchCache(currentUserId);
         invalidateSearchCache(targetUserId);
@@ -404,7 +407,7 @@ public class UserNodeServiceImpl implements UserNodeService {
     }
 
     private String generateRelationshipCacheKey(String userId, String relationship) {
-        return relationship + userId + ":";
+        return relationship + userId;
     }
 
     private String generateSearchCacheKey(String userId, String query, int pageNumber, int pageSize) {
@@ -412,22 +415,22 @@ public class UserNodeServiceImpl implements UserNodeService {
     }
 
     private void invalidateRelationshipCaches(String userId) {
-        Set<String> friendKeys = redisTemplate.keys(CacheConstant.FRIENDS_CACHE_PREFIX + userId + ":*");
+        Set<String> friendKeys = redisTemplate.keys(CacheConstant.FRIENDS_CACHE_PREFIX + userId + "*");
         if (!friendKeys.isEmpty()) {
             redisTemplate.delete(friendKeys);
         }
 
-        Set<String> blockedKeys = redisTemplate.keys(CacheConstant.BLOCKED_CACHE_PREFIX + userId + ":*");
+        Set<String> blockedKeys = redisTemplate.keys(CacheConstant.BLOCKED_CACHE_PREFIX + userId + "*");
         if (!blockedKeys.isEmpty()) {
             redisTemplate.delete(blockedKeys);
         }
 
-        Set<String> incomingKeys = redisTemplate.keys(CacheConstant.INCOMING_REQUESTS_CACHE_PREFIX + userId + ":*");
+        Set<String> incomingKeys = redisTemplate.keys(CacheConstant.INCOMING_REQUESTS_CACHE_PREFIX + userId + "*");
         if (!incomingKeys.isEmpty()) {
             redisTemplate.delete(incomingKeys);
         }
 
-        Set<String> sentKeys = redisTemplate.keys(CacheConstant.SENT_REQUESTS_CACHE_PREFIX + userId + ":*");
+        Set<String> sentKeys = redisTemplate.keys(CacheConstant.SENT_REQUESTS_CACHE_PREFIX + userId + "*");
         if (!sentKeys.isEmpty()) {
             redisTemplate.delete(sentKeys);
         }

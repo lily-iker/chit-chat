@@ -18,4 +18,10 @@ public class UserNode {
     private String id;
 
     private String userId;
+
+    private String fullName;
+
+    private String profileImageUrl;
+
+    private String bio;
 }
