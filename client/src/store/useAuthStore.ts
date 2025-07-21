@@ -33,7 +33,7 @@ type AuthState = {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   authUser: null,
-  isAuthLoading: false,
+  isAuthLoading: true,
   isLoading: false,
   error: null,
 

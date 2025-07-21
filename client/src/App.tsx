@@ -13,7 +13,7 @@ import { useWebSocketStore } from './store/useWebSocketStore'
 import FriendsPage from './pages/friend/FriendPage'
 
 function App() {
-  const { authUser, fetchAuthUser } = useAuthStore()
+  const { authUser, fetchAuthUser, isAuthLoading } = useAuthStore()
   const { theme } = useThemeStore()
   const { connect, disconnect } = useWebSocketStore()
 
@@ -48,7 +48,7 @@ function App() {
     }
   }, [isAuthenticated, isProfileCompleted, connect, disconnect])
 
-  if (isLoading) {
+  if (isLoading || isAuthLoading) {
     return <Loading />
   }
 
