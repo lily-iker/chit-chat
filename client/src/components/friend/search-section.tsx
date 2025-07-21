@@ -5,22 +5,53 @@ import { useRelationshipStore } from '@/store/useRelationshipStore'
 
 const SearchSection = () => {
   const [query, setQuery] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
   const { searchResults, searchCount, searchLoading, searchHasMore, searchQuery, searchUsers } =
     useRelationshipStore()
 
+  // Clear results immediately when query changes (before debounce)
+  useEffect(() => {
+    if (query.trim() !== searchQuery && searchQuery !== '') {
+      searchUsers('', true)
+      setIsTyping(true)
+    } else if (query.trim()) {
+      setIsTyping(true)
+    }
+  }, [query])
+
   // Debounced search
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (query.trim()) {
+      setIsTyping(true)
+    }
+
+    const timer = setTimeout(async () => {
       if (query.trim() !== searchQuery) {
-        searchUsers(query.trim(), true)
+        // Only set isTyping to false when we actually start the search
+        if (query.trim()) {
+          // Keep isTyping true until search starts
+          await searchUsers(query.trim(), true)
+        }
       }
+      // Set isTyping to false after search is triggered or if query is empty
+      setIsTyping(false)
     }, 500)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+    }
   }, [query, searchQuery, searchUsers])
+
+  // Reset isTyping when searchLoading becomes true
+  useEffect(() => {
+    if (searchLoading) {
+      setIsTyping(false)
+    }
+  }, [searchLoading])
 
   const handleClearSearch = () => {
     setQuery('')
+    setIsTyping(false)
     searchUsers('', true)
   }
 
@@ -29,6 +60,9 @@ const SearchSection = () => {
       searchUsers(query.trim(), false)
     }
   }
+
+  // Show loading when either typing or search is in progress
+  const isLoading = isTyping || searchLoading
 
   return (
     <div className="space-y-6">
@@ -60,7 +94,7 @@ const SearchSection = () => {
           </h3>
           <UserList
             users={searchResults}
-            loading={searchLoading}
+            loading={isLoading}
             hasMore={searchHasMore}
             onLoadMore={handleLoadMore}
             emptyMessage="No users found"
