@@ -8,6 +8,7 @@ import { Link } from 'react-router'
 import { MessageType } from '@/types/enum/MessageType'
 import ChatsSkeleton from './skeleton/chats-skeleton'
 import ChatTime from './chat-time'
+import CreateChatModal from '../chat/create-chat-modal'
 
 const ChatList = () => {
   const {
@@ -24,6 +25,7 @@ const ChatList = () => {
 
   const { authUser } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
+  const [isCreateChatModalOpen, setIsCreateChatModalOpen] = useState(false)
 
   // Infinite scroll for chats
   const { containerRef: chatsContainerRef, handleScroll } = useInfiniteScroll({
@@ -132,7 +134,7 @@ const ChatList = () => {
             </button>
             <button
               className="btn btn-circle btn-sm btn-ghost"
-              onClick={() => console.log('Create new chat')}
+              onClick={() => setIsCreateChatModalOpen(true)}
               title="New Chat"
             >
               <Plus className="w-4 h-4" />
@@ -279,6 +281,10 @@ const ChatList = () => {
           </div>
         )}
       </div>
+      <CreateChatModal
+        isOpen={isCreateChatModalOpen}
+        onClose={() => setIsCreateChatModalOpen(false)}
+      />
     </div>
   )
 }

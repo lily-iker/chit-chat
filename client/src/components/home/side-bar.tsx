@@ -7,6 +7,7 @@ import ChatsSkeleton from './skeleton/chats-skeleton'
 import type { Chat } from '@/types/Chat'
 import { MessageType } from '@/types/enum/MessageType'
 import ChatTime from './chat-time'
+import CreateChatModal from '../chat/create-chat-modal'
 
 const Sidebar = () => {
   const {
@@ -23,6 +24,7 @@ const Sidebar = () => {
 
   const { authUser } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
+  const [isCreateChatModalOpen, setIsCreateChatModalOpen] = useState(false)
 
   // Infinite scroll for chats
   const { containerRef: chatsContainerRef, handleScroll } = useInfiniteScroll({
@@ -121,7 +123,7 @@ const Sidebar = () => {
             </button>
             <button
               className="btn btn-circle btn-sm btn-ghost"
-              onClick={() => console.log('Create new chat')}
+              onClick={() => setIsCreateChatModalOpen(true)}
               title="New Chat"
             >
               <Plus className="w-4 h-4" />
@@ -268,6 +270,10 @@ const Sidebar = () => {
           </div>
         )}
       </div>
+      <CreateChatModal
+        isOpen={isCreateChatModalOpen}
+        onClose={() => setIsCreateChatModalOpen(false)}
+      />
     </aside>
   )
 }
