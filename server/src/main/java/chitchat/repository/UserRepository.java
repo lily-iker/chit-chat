@@ -44,4 +44,8 @@ public interface UserRepository extends MongoRepository<User, String> {
     """,
     count = true)
     long countByFullNameExcludingUsers(String searchTerm, List<String> excludedUserIds);
+
+    @Query("{ '_id': { $in: ?1 }, 'fullName': { $regex: ?0, $options: 'i' } }")
+    List<User> searchByFullNameIn(String query, List<String> userIds);
+
 }

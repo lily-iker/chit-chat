@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Users, UserPlus, UserCheck, Shield, Search } from 'lucide-react'
+import { Users, UserPlus, UserCheck, Shield, Search, X } from 'lucide-react'
 import UserList from '@/components/friend/user-list'
 import SearchSection from '@/components/friend/search-section'
 import { useRelationshipStore } from '@/store/useRelationshipStore'
+import { RelationshipStatus } from '@/types/enum/RelationshipStatus'
 
 type TabType = 'friends' | 'incoming' | 'sent' | 'blocked' | 'search'
 
 const FriendsPage = () => {
   const [activeTab, setActiveTab] = useState<TabType>('friends')
+  const [localFriendSearchQuery, setLocalFriendSearchQuery] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
 
   const {
     counts,
@@ -29,6 +32,12 @@ const FriendsPage = () => {
     blockedLoading,
     blockedHasMore,
     getBlockedUsers,
+    friendSearchResults,
+    friendCount,
+    friendSearchLoading,
+    friendSearchHasMore,
+    friendSearchQuery,
+    searchFriends,
   } = useRelationshipStore()
 
   // Load counts on component mount
@@ -53,6 +62,71 @@ const FriendsPage = () => {
         break
     }
   }, [activeTab])
+
+  // Clear results immediately when query changes (before debounce)
+  useEffect(() => {
+    if (
+      localFriendSearchQuery.trim() !== friendSearchQuery &&
+      friendSearchQuery !== '' &&
+      activeTab === 'friends'
+    ) {
+      searchFriends('', true)
+      setIsTyping(true)
+    } else if (localFriendSearchQuery.trim() && activeTab === 'friends') {
+      setIsTyping(true)
+    }
+  }, [localFriendSearchQuery, activeTab])
+
+  // Debounced search
+  useEffect(() => {
+    if (localFriendSearchQuery.trim() && activeTab === 'friends') {
+      setIsTyping(true)
+    }
+
+    const timer = setTimeout(async () => {
+      if (localFriendSearchQuery.trim() !== friendSearchQuery && activeTab === 'friends') {
+        // Only set isTyping to false when we actually start the search
+        if (localFriendSearchQuery.trim()) {
+          // Keep isTyping true until search starts
+          await searchFriends(localFriendSearchQuery.trim(), true)
+        }
+      }
+      // Set isTyping to false after search is triggered or if query is empty
+      setIsTyping(false)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [localFriendSearchQuery, activeTab, friendSearchQuery, searchFriends])
+
+  // Reset isTyping when friendSearchLoading becomes true
+  useEffect(() => {
+    if (friendSearchLoading) {
+      setIsTyping(false)
+    }
+  }, [friendSearchLoading])
+
+  const handleClearFriendSearch = () => {
+    setLocalFriendSearchQuery('')
+    setIsTyping(false)
+    searchFriends('', true)
+  }
+
+  const handleLoadMoreFriendSearch = () => {
+    if (localFriendSearchQuery.trim()) {
+      searchFriends(localFriendSearchQuery.trim(), false)
+    }
+  }
+
+  // Show loading when either typing or search is in progress
+  const isFriendSearchLoading = isTyping || friendSearchLoading
+
+  const mappedSearchResults = friendSearchResults.map((user) => {
+    const relationshipStatus: RelationshipStatus = RelationshipStatus.FRIEND
+    return {
+      ...user,
+      relationshipStatus,
+    }
+  })
 
   const tabs = [
     {
@@ -91,14 +165,57 @@ const FriendsPage = () => {
     switch (activeTab) {
       case 'friends':
         return (
-          <UserList
-            users={friends}
-            loading={friendsLoading}
-            hasMore={friendsHasMore}
-            onLoadMore={() => getFriends(false)}
-            emptyMessage="No friends yet"
-            emptyIcon={<Users className="w-16 h-16 text-base-content/30" />}
-          />
+          <div className="space-y-4">
+            {/* Friend Search */}
+            <div className="relative border-1 rounded-lg">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/50" />
+              <input
+                type="text"
+                placeholder="Search your friends..."
+                value={localFriendSearchQuery}
+                onChange={(e) => setLocalFriendSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-12 py-3 bg-base-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              {localFriendSearchQuery && (
+                <button
+                  onClick={handleClearFriendSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-base-300 rounded-full transition-colors"
+                >
+                  {isFriendSearchLoading && localFriendSearchQuery.trim() ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : (
+                    <X className="w-4 h-4" />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Friend Search Results or Regular Friends List */}
+            {localFriendSearchQuery.trim() ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-4">
+                  Search Results {friendCount > 0 && `(${friendCount})`}
+                </h3>
+                <UserList
+                  users={mappedSearchResults}
+                  loading={isFriendSearchLoading}
+                  hasMore={friendSearchHasMore}
+                  onLoadMore={handleLoadMoreFriendSearch}
+                  emptyMessage="No friends found"
+                  emptyIcon={<Search className="w-16 h-16 text-base-content/30" />}
+                />
+              </div>
+            ) : (
+              <UserList
+                users={friends}
+                loading={friendsLoading}
+                hasMore={friendsHasMore}
+                onLoadMore={() => getFriends(false)}
+                emptyMessage="No friends yet"
+                emptyIcon={<Users className="w-16 h-16 text-base-content/30" />}
+              />
+            )}
+          </div>
         )
 
       case 'incoming':

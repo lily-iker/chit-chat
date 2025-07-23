@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { RelationshipStatus } from '@/types/enum/RelationshipStatus'
 import type { UserSearchResponse } from '@/types/response/UserSearchResponse'
 import type { PageResponse } from '@/types/response/PageResponse'
+import type { UserProfileResponse } from '@/types/response/UserProfileResponse'
 
 interface RelationshipCounts {
   friendsCount: number
@@ -49,6 +50,13 @@ interface RelationshipState {
   searchPage: number
   searchQuery: string
 
+  friendSearchResults: UserProfileResponse[]
+  friendCount: number
+  friendSearchLoading: boolean
+  friendSearchHasMore: boolean
+  friendSearchPage: number
+  friendSearchQuery: string
+
   // Actions
   getRelationshipCounts: () => Promise<void>
   getFriends: (reset?: boolean) => Promise<void>
@@ -56,6 +64,7 @@ interface RelationshipState {
   getSentRequests: (reset?: boolean) => Promise<void>
   getBlockedUsers: (reset?: boolean) => Promise<void>
   searchUsers: (query: string, reset?: boolean) => Promise<void>
+  searchFriends: (query: string, reset?: boolean) => Promise<void>
 
   // Friend actions
   sendFriendRequest: (userId: string) => Promise<void>
@@ -119,6 +128,13 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
   searchHasMore: true,
   searchPage: 1,
   searchQuery: '',
+
+  friendSearchResults: [],
+  friendCount: 0,
+  friendSearchLoading: false,
+  friendSearchHasMore: true,
+  friendSearchPage: 1,
+  friendSearchQuery: '',
 
   // Get friend counts
   getRelationshipCounts: async () => {
@@ -281,6 +297,46 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
       console.error('Failed to search users:', error)
       toast.error('Failed to search users')
       set({ searchLoading: false })
+    }
+  },
+
+  // Search friends
+  searchFriends: async (query: string, reset = false) => {
+    if (!query.trim()) {
+      set({
+        friendSearchResults: [],
+        friendCount: 0,
+        friendSearchQuery: '',
+        friendSearchPage: 1,
+        friendSearchHasMore: true,
+      })
+      return
+    }
+
+    const { friendSearchLoading, friendSearchHasMore, friendSearchPage } = get()
+    if (friendSearchLoading || (!reset && !friendSearchHasMore)) return
+
+    set({ friendSearchLoading: true })
+
+    try {
+      const page = reset ? 1 : friendSearchPage
+      const response = await axios.get(
+        `/api/v1/user-nodes/search-friends?query=${encodeURIComponent(query)}&pageNumber=${page}`
+      )
+      const data: PageResponse<UserSearchResponse> = response.data.result
+
+      set((state) => ({
+        friendSearchResults: reset ? data.content : [...state.friendSearchResults, ...data.content],
+        friendCount: data.totalElements,
+        friendSearchQuery: query,
+        friendSearchPage: page + 1,
+        friendSearchHasMore: page < data.totalPages,
+        friendSearchLoading: false,
+      }))
+    } catch (error) {
+      console.error('Failed to search friends:', error)
+      toast.error('Failed to search friends')
+      set({ friendSearchLoading: false })
     }
   },
 

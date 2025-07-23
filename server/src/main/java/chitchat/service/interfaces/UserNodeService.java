@@ -15,5 +15,6 @@ public interface UserNodeService {
     PageResponse<?> getBlockedUsers(int pageNumber, int pageSize);
     PageResponse<?> getIncomingFriendRequests(int pageNumber, int pageSize);
     PageResponse<?> getSentFriendRequests(int pageNumber, int pageSize);
+    PageResponse<?> searchFriends(String query, int pageNumber, int pageSize, String sortBy, String sortDirection);
     PageResponse<?> searchUsers(String query, int pageNumber, int pageSize, String sortBy, String sortDirection);
 }

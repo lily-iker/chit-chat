@@ -81,7 +81,11 @@ const SearchSection = () => {
             onClick={handleClearSearch}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-base-300 rounded-full transition-colors"
           >
-            <X className="w-4 h-4" />
+            {isLoading && query.trim() ? (
+              <span className="loading loading-spinner loading-sm"></span>
+            ) : (
+              <X className="w-4 h-4" />
+            )}
           </button>
         )}
       </div>

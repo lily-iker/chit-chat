@@ -138,6 +138,20 @@ public class UserNodeController {
         );
     }
 
+    @GetMapping("/search-friends")
+    public ResponseEntity<?> searchFriends(@RequestParam String query,
+                                           @RequestParam(defaultValue = "1") int pageNumber,
+                                           @RequestParam(defaultValue = "20") int pageSize,
+                                           @RequestParam(defaultValue = "fullName") String sortBy,
+                                           @RequestParam(defaultValue = "asc") String sortDirection) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Friends searched successfully",
+                        userNodeService.searchFriends(query, pageNumber, pageSize, sortBy, sortDirection)
+                )
+        );
+    }
+
     @GetMapping("/search")
     public ResponseEntity<?> searchUsers(@RequestParam String query,
                                          @RequestParam(defaultValue = "1") int pageNumber,

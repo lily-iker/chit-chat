@@ -4,6 +4,7 @@ import chitchat.constant.CacheConstant;
 import chitchat.dto.response.PageResponse;
 import chitchat.dto.response.user.UserProfileResponse;
 import chitchat.dto.response.user.UserSearchResponse;
+import chitchat.mapper.UserMapper;
 import chitchat.model.User;
 import chitchat.model.UserNode;
 import chitchat.model.enumeration.RelationshipStatus;
@@ -30,6 +31,7 @@ public class UserNodeServiceImpl implements UserNodeService {
     private final UserNodeRepository userNodeRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -261,6 +263,69 @@ public class UserNodeServiceImpl implements UserNodeService {
                 .totalElements(total)
                 .totalPages(totalPages)
                 .content(sent)
+                .build();
+    }
+
+    @Override
+    public PageResponse<?> searchFriends(String query, int pageNumber, int pageSize, String sortBy, String sortDirection) {
+        String currentUserId = userService.getCurrentUser().getUser().getId();
+
+        // Get friend IDs from cache or database
+        String cacheKey = generateRelationshipCacheKey(currentUserId, CacheConstant.FRIENDS_CACHE_PREFIX);
+        Set<Object> allFriendIdsObject = redisTemplate.opsForSet().members(cacheKey);
+        Set<String> allFriendIds = objectMapper.convertValue(allFriendIdsObject, new TypeReference<>() {});
+
+        if (allFriendIds == null || allFriendIds.isEmpty()) {
+            // Cache miss - load from DB
+            allFriendIds = new HashSet<>(userNodeRepository.findFriendIds(currentUserId));
+            // Cache the result
+            if (!allFriendIds.isEmpty() && allFriendIds.size() <= CacheConstant.MAX_FRIENDS_TO_CACHE) {
+                redisTemplate.opsForSet().add(cacheKey, allFriendIds.toArray(new String[0]));
+                redisTemplate.expire(cacheKey, CacheConstant.FRIENDS_CACHE_TTL);
+            }
+        }
+
+        if (allFriendIds.isEmpty()) {
+            return PageResponse.builder()
+                    .pageNumber(pageNumber)
+                    .pageSize(pageSize)
+                    .totalElements(0)
+                    .totalPages(0)
+                    .content(new ArrayList<>())
+                    .build();
+        }
+
+        // Search friends by query using MongoDB full-text search
+        List<UserProfileResponse> searchResults = userRepository.searchByFullNameIn(
+                        query.toLowerCase(),
+                        new ArrayList<>(allFriendIds)
+                ).stream()
+                .map(userMapper::toUserProfileResponse)
+                .collect(Collectors.toList());
+
+        // Apply sorting
+        if ("fullName".equals(sortBy)) {
+            if ("desc".equals(sortDirection)) {
+                searchResults.sort((a, b) -> b.getFullName().compareToIgnoreCase(a.getFullName()));
+            } else {
+                searchResults.sort((a, b) -> a.getFullName().compareToIgnoreCase(b.getFullName()));
+            }
+        }
+
+        // Manual pagination
+        int total = searchResults.size();
+        int totalPages = (int) Math.ceil((double) total / pageSize);
+        int fromIndex = Math.min((pageNumber - 1) * pageSize, total);
+        int toIndex = Math.min(fromIndex + pageSize, total);
+
+        List<UserProfileResponse> pageContent = searchResults.subList(fromIndex, toIndex);
+
+        return PageResponse.builder()
+                .pageNumber(pageNumber)
+                .pageSize(pageSize)
+                .totalElements(total)
+                .totalPages(totalPages)
+                .content(pageContent)
                 .build();
     }
 
