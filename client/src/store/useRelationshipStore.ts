@@ -509,28 +509,40 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
         blockedUsersCount: 0,
       },
       countsLoading: false,
+
       friends: [],
       friendsLoading: false,
       friendsHasMore: true,
       friendsPage: 1,
+
       incomingRequests: [],
       incomingLoading: false,
       incomingHasMore: true,
       incomingPage: 1,
+
       sentRequests: [],
       sentLoading: false,
       sentHasMore: true,
       sentPage: 1,
+
       blockedUsers: [],
       blockedLoading: false,
       blockedHasMore: true,
       blockedPage: 1,
+
       searchResults: [],
       searchCount: 0,
       searchLoading: false,
       searchHasMore: true,
       searchPage: 1,
       searchQuery: '',
+
+      friendSearchResults: [],
+      friendCount: 0,
+      friendSearchLoading: false,
+      friendSearchHasMore: true,
+      friendSearchPage: 1,
+      friendSearchQuery: '',
     })
   },
 }))
