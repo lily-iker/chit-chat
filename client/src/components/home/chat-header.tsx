@@ -65,7 +65,7 @@ const ChatHeader = () => {
           <div className="min-w-0">
             <h3 className="font-medium truncate">{selectedChat.name}</h3>
             {isCallActive && currentChatId === selectedChat.id && (
-              <p className="text-sm text-success">Video calling</p>
+              <p className="text-sm text-success">Video Calling</p>
             )}
           </div>
         </div>

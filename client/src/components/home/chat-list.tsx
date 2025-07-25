@@ -193,7 +193,7 @@ const ChatList = () => {
                 >
                   {/* Avatar */}
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-base-300">
+                    <div className="w-12 h-12 rounded-full overflow-hidden">
                       <img
                         src={chat.chatImageUrl || '/avatar.png'}
                         alt={chat.name || 'Chat Avatar'}
