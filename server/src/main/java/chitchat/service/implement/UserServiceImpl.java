@@ -32,6 +32,10 @@ public class UserServiceImpl implements UserService {
     private final MinioService minioService;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    /**
+    Should move this method to a separate service like `CurrentUserService`, `SecurityUtils`, or something similar
+    to avoid circular dependencies and allow reuse across other services
+    **/
     @Override
     public CustomUserDetails getCurrentUser() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
