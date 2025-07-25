@@ -42,10 +42,10 @@ const CreateChatModal = ({ isOpen, onClose }: CreateChatModalProps) => {
 
   // Load friends when modal opens
   useEffect(() => {
-    if (isOpen && friends.length === 0) {
+    if (isOpen) {
       getFriends(true)
     }
-  }, [isOpen, friends.length, getFriends])
+  }, [isOpen, getFriends])
 
   // Clear results immediately when query changes
   useEffect(() => {
