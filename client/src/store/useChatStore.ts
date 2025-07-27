@@ -22,6 +22,12 @@ interface ChatState {
   currentSubscribedChatId: string | null
   typingUserIds: string[]
   typingTimeouts: Record<string, NodeJS.Timeout>
+  chatSearchResults: Chat[]
+  chatSearchLoading: boolean
+  chatSearchHasMore: boolean
+  chatSearchPage: number
+  chatSearchQuery: string
+  chatSearchTotalCount: number
 
   setSelectedChat: (chat: Chat | null) => void
   getChatById: (chatId: string) => Promise<void>
@@ -36,6 +42,9 @@ interface ChatState {
   addTypingUser: (userId: string) => void
   removeTypingUser: (userId: string) => void
   updateSelectedChatOrder: (message: Message) => void
+  searchChats: (query: string, reset?: boolean) => Promise<void>
+  loadMoreSearchResults: () => Promise<void>
+  clearSearch: () => void
 
   subscribe: (chatId: string) => void
   unsubscribe: () => void
@@ -59,6 +68,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   oldestLoadedMessageId: null,
   typingUserIds: [],
   typingTimeouts: {},
+  chatSearchResults: [],
+  chatSearchLoading: false,
+  chatSearchHasMore: true,
+  chatSearchPage: 1,
+  chatSearchQuery: '',
+  chatSearchTotalCount: 0,
 
   setSelectedChat: (chat) => {
     // Clear all typing indicators and timeouts when switching chats
@@ -358,6 +373,71 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return {}
     })
   },
+
+  searchChats: async (query: string, reset = true) => {
+    if (!query.trim()) {
+      set({
+        chatSearchResults: [],
+        chatSearchQuery: '',
+        chatSearchPage: 1,
+        chatSearchHasMore: true,
+        chatSearchTotalCount: 0,
+      })
+      return
+    }
+
+    const { chatSearchLoading } = get()
+    if (chatSearchLoading) return
+
+    set({ chatSearchLoading: true })
+
+    try {
+      const page = reset ? 1 : get().chatSearchPage
+      const response = await axios.get(
+        `/api/v1/chats/search-my-chats?keyword=${encodeURIComponent(
+          query
+        )}&pageNumber=${page}&pageSize=10`
+      )
+      const data = response.data.result
+
+      const normalizedChats = data.content.map((chat: Chat) => ({
+        ...chat,
+        typingParticipants: chat.typingParticipants ?? [],
+      }))
+
+      set((state) => ({
+        chatSearchResults: reset
+          ? normalizedChats
+          : [...state.chatSearchResults, ...normalizedChats],
+        chatSearchQuery: query,
+        chatSearchPage: page,
+        chatSearchHasMore: page < data.totalPages,
+        chatSearchTotalCount: data.totalElements || normalizedChats.length,
+        chatSearchLoading: false,
+      }))
+    } catch (error) {
+      console.error('Failed to search chats:', error)
+      toast.error('Failed to search chats')
+      set({ chatSearchLoading: false })
+    }
+  },
+
+  loadMoreSearchResults: async () => {
+    const { chatSearchQuery, chatSearchHasMore, chatSearchPage } = get()
+    if (!chatSearchHasMore || !chatSearchQuery) return
+
+    set({ chatSearchPage: chatSearchPage + 1 })
+    await get().searchChats(chatSearchQuery, false)
+  },
+
+  clearSearch: () =>
+    set({
+      chatSearchResults: [],
+      chatSearchQuery: '',
+      chatSearchPage: 1,
+      chatSearchHasMore: true,
+      chatSearchTotalCount: 0,
+    }),
 
   subscribe: (chatId: string) => {
     const { chatSubscription, currentSubscribedChatId } = get()

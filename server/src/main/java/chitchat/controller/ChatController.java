@@ -78,6 +78,20 @@ public class ChatController {
         );
     }
 
+    @GetMapping("search-my-chats")
+    public ResponseEntity<?> searchMyChats(@RequestParam String keyword,
+                                           @RequestParam(defaultValue = "1") int pageNumber,
+                                           @RequestParam(defaultValue = "20") int pageSize,
+                                           @RequestParam(defaultValue = "updatedAt") String sortBy,
+                                           @RequestParam(defaultValue = "desc") String sortDirection) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "My chats searched successfully",
+                        chatService.searchMyChats(keyword, pageNumber, pageSize, sortBy, sortDirection)
+                )
+        );
+    }
+
     @GetMapping("/{chatId}/messages")
     public ResponseEntity<?> getChatMessages(@PathVariable String chatId,
                                              @RequestParam(defaultValue = "1") int pageNumber,

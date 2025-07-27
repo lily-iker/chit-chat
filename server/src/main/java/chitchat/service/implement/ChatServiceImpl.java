@@ -563,6 +563,48 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    public PageResponse<?> searchMyChats(String keyword,
+                                         int pageNumber,
+                                         int pageSize,
+                                         String sortBy,
+                                         String sortDirection) {
+
+        CustomUserDetails currentUser = userService.getCurrentUser();
+        String currentUserId = currentUser.getUser().getId();
+
+        if (pageNumber < 1) {
+            throw new IllegalArgumentException("Page number must be greater than or equal to 1");
+        }
+
+//        sortDirection = (sortDirection == null || sortDirection.isEmpty()) ? "DESC" : sortDirection.toUpperCase();
+//        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy != null ? sortBy : "updatedAt");
+//        Pageable pageable = PageRequest.of(pageNumber - 1, pageSize, sort);
+
+        int skip = (pageNumber - 1) * pageSize;
+
+        List<Chat> chats = chatRepository.searchChats(keyword, currentUserId, skip, pageSize);
+
+        List<ChatResponse> chatResponses = chats.stream()
+                .map(chat -> chatMapper.toOverviewChatResponse(currentUser, chat))
+                .toList();
+
+        long totalElements = 0;
+        int totalPages = 0;
+        if (!chats.isEmpty()) {
+            totalElements = chatRepository.countSearchChats(keyword, currentUserId);
+            totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        }
+
+        return PageResponse.builder()
+                .pageNumber(pageNumber)
+                .pageSize(pageSize)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .content(chatResponses)
+                .build();
+    }
+
+    @Override
     // TODO: enhance this
     public PageResponse<?> getChatMessages(String chatId,
                                            int pageNumber,

@@ -22,6 +22,7 @@ public interface ChatService {
     void promoteParticipantToAdmin(String chatId, String targetUserId);
     void demoteAdminToParticipant(String chatId, String targetUserId);
     PageResponse<?> getMyChats(int pageNumber, int pageSize, String sortBy, String sortDirection, String beforeChatId);
+    PageResponse<?> searchMyChats(String keyword, int pageNumber, int pageSize, String sortBy, String sortDirection);
     PageResponse<?> getChatMessages(String chatId, int pageNumber, int pageSize, String sortBy, String sortDirection, String beforeMessageId);
     void markLastMessageAsSeen(String chatId);
     void handleTypingEvent(TypingEventRequest typingEventRequest);
