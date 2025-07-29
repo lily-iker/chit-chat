@@ -40,11 +40,14 @@ public class Chat extends AbstractAuditingDocument {
 
     private Instant lastMessageTime;
 
+    private Boolean isLastMessageDeleted;
+
     private List<String> participants;
 
     private List<String> admins;
 
-    private Boolean isDeleted;
+    @Builder.Default
+    private Boolean isDeleted = false;
 
     private String deletedBy;
 }

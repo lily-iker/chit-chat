@@ -17,12 +17,14 @@ public class ChatResponse {
     private String name;
     private String chatImageUrl;
     private Boolean isGroupChat;
+    private String lastMessageId;
     private String lastMessageContent;
     private String lastMessageSenderId;
     private String lastMessageSenderName;
     private MessageType lastMessageType;
     private String lastMessageMediaUrl;
     private Instant lastMessageTime;
+    private Boolean isLastMessageDeleted;
     private List<String> admins;
     private Instant createdAt;
     private Instant updatedAt;

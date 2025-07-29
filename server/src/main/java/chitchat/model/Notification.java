@@ -25,9 +25,10 @@ public class Notification extends AbstractAuditingDocument {
 
     private String chatId;
 
-    private String senderId; // ID of the user who triggered the notification
+    private String senderId;
 
-    private String senderName; // Name of the user who triggered the notification
+    private String senderName;
 
-    private Boolean isRead; // Flag to indicate if the notification has been read
+    @Builder.Default
+    private Boolean isRead = false;
 }

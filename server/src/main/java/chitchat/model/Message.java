@@ -31,11 +31,19 @@ public class Message extends AbstractAuditingDocument {
 
     private String replyToMessageContent;
 
+    private MessageType replyToMessageType;
+
+    private String replyToMessageMediaUrl;
+
     private String replyToMessageSenderId;
 
-    private String replyToMessageSenderName;
+    private Boolean isReplyMessageEdited;
 
-    private Boolean isEdited;
+    private Boolean isReplyMessageDeleted;
 
-    private Boolean isDeleted;
+    @Builder.Default
+    private Boolean isEdited = false;
+
+    @Builder.Default
+    private Boolean isDeleted = false;
 }

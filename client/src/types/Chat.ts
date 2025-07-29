@@ -5,12 +5,14 @@ export interface Chat {
   name: string
   chatImageUrl?: string | null
   isGroupChat: boolean
+  lastMessageId?: string | null
   lastMessageContent?: string | null
   lastMessageSenderId?: string | null
   lastMessageSenderName?: string | null
   lastMessageType?: MessageType | null
   lastMessageMediaUrl?: string | null
   lastMessageTime?: string | null
+  isLastMessageDeleted?: boolean
   admins: string[] | null
   createdAt: string
   updatedAt: string
