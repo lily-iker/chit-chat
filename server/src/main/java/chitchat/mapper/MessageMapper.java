@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class MessageMapper {
-
+    
     private final MessageReadInfoRepository messageReadInfoRepository;
     private final MinioService minioService;
     private final MediaUtils mediaUtils;
@@ -34,14 +34,32 @@ public class MessageMapper {
         return MessageResponse.builder()
                 .id(message.getId())
                 .chatId(message.getChatId())
-                .content(message.getContent())
+                // Only include content if the message is not deleted
+                .content(
+                        Boolean.TRUE.equals(message.getIsDeleted())
+                                ? null
+                                : message.getContent()
+                )
                 .senderId(message.getSenderId())
                 .messageType(message.getMessageType())
                 .mediaUrl(mediaUrl)
                 .replyToMessageId(message.getReplyToMessageId())
-                .replyToMessageContent(message.getReplyToMessageContent())
+                // Only include reply content if the reply message is not deleted
+                .replyToMessageContent(
+                        Boolean.TRUE.equals(message.getIsReplyMessageDeleted())
+                                ? null
+                                : message.getReplyToMessageContent()
+                )
+                .replyToMessageType(message.getReplyToMessageType())
+                // Only include media URL if the reply message is not deleted
+                .replyToMessageMediaUrl(
+                        Boolean.TRUE.equals(message.getIsReplyMessageDeleted())
+                                ? null
+                                : message.getReplyToMessageMediaUrl()
+                )
                 .replyToMessageSenderId(message.getReplyToMessageSenderId())
-                .replyToMessageSenderName(message.getReplyToMessageSenderName())
+                .isReplyMessageEdited(message.getIsReplyMessageEdited())
+                .isReplyMessageDeleted(message.getIsReplyMessageDeleted())
                 .isEdited(message.getIsEdited())
                 .isDeleted(message.getIsDeleted())
                 .createdAt(message.getCreatedAt())
@@ -80,14 +98,29 @@ public class MessageMapper {
                     return MessageResponse.builder()
                             .id(message.getId())
                             .chatId(message.getChatId())
-                            .content(message.getContent())
+                            .content(
+                                    Boolean.TRUE.equals(message.getIsDeleted())
+                                            ? null
+                                            : message.getContent()
+                            )
                             .senderId(message.getSenderId())
                             .messageType(message.getMessageType())
                             .mediaUrl(mediaUrl)
                             .replyToMessageId(message.getReplyToMessageId())
-                            .replyToMessageContent(message.getReplyToMessageContent())
+                            .replyToMessageContent(
+                                    Boolean.TRUE.equals(message.getIsReplyMessageDeleted())
+                                            ? null
+                                            : message.getReplyToMessageContent()
+                            )
+                            .replyToMessageType(message.getReplyToMessageType())
+                            .replyToMessageMediaUrl(
+                                    Boolean.TRUE.equals(message.getIsReplyMessageDeleted())
+                                            ? null
+                                            : message.getReplyToMessageMediaUrl()
+                            )
                             .replyToMessageSenderId(message.getReplyToMessageSenderId())
-                            .replyToMessageSenderName(message.getReplyToMessageSenderName())
+                            .isReplyMessageEdited(message.getIsReplyMessageEdited())
+                            .isReplyMessageDeleted(message.getIsReplyMessageDeleted())
                             .isEdited(message.getIsEdited())
                             .isDeleted(message.getIsDeleted())
                             .createdAt(message.getCreatedAt())

@@ -31,12 +31,24 @@ public class ChatMapper {
                 .name(chat.getName())
                 .chatImageUrl(chat.getChatImageUrl())
                 .isGroupChat(chat.getIsGroupChat())
-                .lastMessageContent(chat.getLastMessageContent())
+                .lastMessageId(chat.getLastMessageId())
+                // Only include content if the last message is not deleted
+                .lastMessageContent(
+                        Boolean.TRUE.equals(chat.getIsLastMessageDeleted())
+                                ? null
+                                : chat.getLastMessageContent()
+                )
                 .lastMessageSenderId(chat.getLastMessageSenderId())
                 .lastMessageSenderName(chat.getLastMessageSenderName())
                 .lastMessageType(chat.getLastMessageType())
-                .lastMessageMediaUrl(chat.getLastMessageMediaUrl())
+                // Only include media URL if the last message is not deleted
+                .lastMessageMediaUrl(
+                        Boolean.TRUE.equals(chat.getIsLastMessageDeleted())
+                                ? null
+                                : chat.getLastMessageMediaUrl()
+                )
                 .lastMessageTime(chat.getLastMessageTime())
+                .isLastMessageDeleted(chat.getIsLastMessageDeleted())
                 .admins(chat.getAdmins())
                 .createdAt(chat.getCreatedAt())
                 .updatedAt(chat.getUpdatedAt())
@@ -96,12 +108,22 @@ public class ChatMapper {
                 .id(chat.getId())
                 .name(chat.getName())
                 .isGroupChat(chat.getIsGroupChat())
-                .lastMessageContent(chat.getLastMessageContent())
+                .lastMessageId(chat.getLastMessageId())
+                .lastMessageContent(
+                        Boolean.TRUE.equals(chat.getIsLastMessageDeleted())
+                                ? null
+                                : chat.getLastMessageContent()
+                )
                 .lastMessageSenderId(chat.getLastMessageSenderId())
                 .lastMessageSenderName(chat.getLastMessageSenderName())
                 .lastMessageType(chat.getLastMessageType())
-                .lastMessageMediaUrl(chat.getLastMessageMediaUrl())
+                .lastMessageMediaUrl(
+                        Boolean.TRUE.equals(chat.getIsLastMessageDeleted())
+                                ? null
+                                : chat.getLastMessageMediaUrl()
+                )
                 .lastMessageTime(chat.getLastMessageTime())
+                .isLastMessageDeleted(chat.getIsLastMessageDeleted())
                 .createdAt(chat.getCreatedAt())
                 .updatedAt(chat.getUpdatedAt())
                 .build();

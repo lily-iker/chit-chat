@@ -10,4 +10,5 @@ public class SendMessageRequest {
     private String senderId;
     private String content;
     private String mediaUrl;
+    private String replyToMessageId;
 }

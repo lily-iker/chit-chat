@@ -23,8 +23,11 @@ public class MessageResponse {
     private String mediaUrl;
     private String replyToMessageId;
     private String replyToMessageContent;
+    private MessageType replyToMessageType;
+    private String replyToMessageMediaUrl;
     private String replyToMessageSenderId;
-    private String replyToMessageSenderName;
+    private Boolean isReplyMessageEdited;
+    private Boolean isReplyMessageDeleted;
     private Boolean isEdited;
     private Boolean isDeleted;
     private Instant createdAt;

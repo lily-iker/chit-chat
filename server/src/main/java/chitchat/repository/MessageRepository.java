@@ -27,4 +27,7 @@ public interface MessageRepository extends MongoRepository<Message, String> {
             count = true
     )
     long countUnreadMessages(String chatId, Instant lastReadAt, String userId);
+
+    @Query("{ 'replyToMessageId': ?0 }")
+    List<Message> findByReplyToMessageId(String replyToMessageId);
 }

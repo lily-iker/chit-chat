@@ -6,14 +6,17 @@ import chitchat.dto.request.chat.UpdateChatRequest;
 import chitchat.dto.request.event.TypingEventRequest;
 import chitchat.dto.response.PageResponse;
 import chitchat.dto.response.chat.ChatResponse;
+import chitchat.dto.response.event.TypingEventResponse;
 import chitchat.dto.response.message.MessageReadInfoResponse;
 import chitchat.dto.response.message.MessageResponse;
+import chitchat.dto.response.websocket.WebSocketResponse;
 import chitchat.exception.InvalidDataException;
 import chitchat.exception.NoPermissionException;
 import chitchat.exception.ResourceNotFoundException;
 import chitchat.mapper.ChatMapper;
 import chitchat.mapper.MessageMapper;
 import chitchat.model.*;
+import chitchat.model.enumeration.ChatEvent;
 import chitchat.model.enumeration.MessageType;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.*;
@@ -684,23 +687,37 @@ public class ChatServiceImpl implements ChatService {
                 .readAt(info.getReadAt())
                 .build();
 
-        messagingTemplate.convertAndSend(WebSocketDestination.CHAT_TOPIC_PREFIX + chatId, readInfoResponse);
+        messagingTemplate.convertAndSend(
+                WebSocketDestination.CHAT_TOPIC_PREFIX + chatId,
+                new WebSocketResponse<>(ChatEvent.CHAT_READ, readInfoResponse)
+        );
     }
 
     @Async
     @Override
     public void handleTypingEvent(TypingEventRequest typingEventRequest) {
-        messagingTemplate.convertAndSend(WebSocketDestination.CHAT_TOPIC_PREFIX + typingEventRequest.getChatId(), typingEventRequest);
-
         Chat chat = chatRepository.findById(typingEventRequest.getChatId())
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
+
+        TypingEventResponse typingEventResponse = TypingEventResponse.builder()
+                .userId(typingEventRequest.getUserId())
+                .chatId(typingEventRequest.getChatId())
+                .build();
+
+        WebSocketResponse<TypingEventResponse> webSocketResponse =
+                new WebSocketResponse<>(ChatEvent.USER_TYPING, typingEventResponse);
+
+        messagingTemplate.convertAndSend(
+                WebSocketDestination.CHAT_TOPIC_PREFIX + typingEventRequest.getChatId(),
+                webSocketResponse
+        );
 
         // Notify all other participants (excluding sender)
         for (String participantId : chat.getParticipants()) {
             if (!participantId.equals(typingEventRequest.getUserId())) {
                 notificationService.sendNotification(
                         WebSocketDestination.USER_NOTIFICATION_PREFIX + participantId,
-                        typingEventRequest
+                        webSocketResponse
                 );
             }
         }

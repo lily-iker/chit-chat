@@ -4,6 +4,8 @@ import { useWebSocketStore } from './useWebSocketStore'
 import { useAuthStore } from './useAuthStore'
 import { useChatStore } from './useChatStore'
 import axios from '@/lib/axios-custom'
+import { ChatEvent } from '@/types/enum/ChatEvent'
+import type { WebSocketResponse } from '@/types/response/WebSocketResponse'
 
 export type Notification = {
   id: string
@@ -15,13 +17,13 @@ export type Notification = {
 interface NotificationState {
   notifications: Notification[]
   chatTypingTimeouts: Record<string, Record<string, NodeJS.Timeout>> // chatId -> userId -> timeout
-
   subscribeToNotifications: () => void
   unsubscribeFromNotifications: () => void
   addNotification: (notification: Notification) => void
   clearNotifications: () => void
-  clearChatTypingUser: (chatId: string, userId: string) => void // New method
-
+  clearChatTypingUser: (chatId: string, userId: string) => void
+  handleUserTyping: (data: any) => void
+  handleNewMessage: (data: any) => void
   cleanup: () => void
 }
 
@@ -43,13 +45,11 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       const chatTimeouts = state.chatTypingTimeouts[chatId]
       if (chatTimeouts && chatTimeouts[userId]) {
         clearTimeout(chatTimeouts[userId])
-
         const { [userId]: _, ...remainingUserTimeouts } = chatTimeouts
         const updatedChatTimeouts = {
           ...state.chatTypingTimeouts,
           [chatId]: remainingUserTimeouts,
         }
-
         return { chatTypingTimeouts: updatedChatTimeouts }
       }
       return state
@@ -70,6 +70,125 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     })
   },
 
+  handleUserTyping: (data: any) => {
+    const { chatId, userId } = data
+    console.log('[Notification] Typing indicator:', { chatId, userId })
+
+    // Clear existing timeout for this user in this chat
+    const state = get()
+    const chatTimeouts = state.chatTypingTimeouts[chatId] || {}
+    if (chatTimeouts[userId]) {
+      clearTimeout(chatTimeouts[userId])
+    }
+
+    // Set new timeout
+    const timeoutId = setTimeout(() => {
+      get().clearChatTypingUser(chatId, userId)
+    }, 5000)
+
+    // Update timeouts
+    set((state) => ({
+      chatTypingTimeouts: {
+        ...state.chatTypingTimeouts,
+        [chatId]: {
+          ...chatTimeouts,
+          [userId]: timeoutId,
+        },
+      },
+    }))
+
+    // Update chat store
+    useChatStore.setState((state) => {
+      const updatedChats = state.chats.map((chat) => {
+        if (chat.id === chatId) {
+          const typingList = chat.typingParticipants || []
+          return {
+            ...chat,
+            typingParticipants: typingList.includes(userId) ? typingList : [...typingList, userId],
+          }
+        }
+        return chat
+      })
+      return { chats: updatedChats }
+    })
+  },
+
+  handleNewMessage: async (data: any) => {
+    console.log('[Notification] New message:', data)
+
+    // Clear typing indicator for the sender when they send a message
+    get().clearChatTypingUser(data.chatId, data.senderId)
+
+    // Don't update if this is the currently selected chat (handled by chat subscription)
+    if (useChatStore.getState().selectedChat?.id === data.chatId) {
+      return
+    }
+
+    const chatExists = useChatStore.getState().chats.some((chat) => chat.id === data.chatId)
+
+    if (chatExists) {
+      const currentUserId = useAuthStore.getState().authUser?.id
+
+      useChatStore.setState((state) => {
+        const updatedChats = [...state.chats]
+        const chatIndex = updatedChats.findIndex((chat) => chat.id === data.chatId)
+
+        if (chatIndex !== -1) {
+          const chat = updatedChats[chatIndex]
+          const isFromOtherUser = data.senderId !== currentUserId
+          const isFromSelectedChat = chat.id === useChatStore.getState().selectedChat?.id
+          const shouldUpdateUnreadCount = isFromOtherUser && !isFromSelectedChat
+
+          const unreadCount = chat.unreadMessageCount || 0
+
+          const updatedChat = {
+            ...chat,
+            lastMessageId: data.id,
+            lastMessageContent: data.content,
+            lastMessageSenderId: data.senderId,
+            lastMessageSenderName: data.senderName,
+            lastMessageTime: data.createdAt,
+            lastMessageType: data.messageType,
+            lastMessageMediaType: data.mediaType,
+            lastMessageMediaUrl: data.mediaUrl,
+            unreadMessageCount: shouldUpdateUnreadCount ? unreadCount + 1 : unreadCount,
+            // Clear typing participants when message is received
+            typingParticipants: [],
+          }
+
+          // Move chat to top
+          updatedChats.splice(chatIndex, 1)
+          updatedChats.unshift(updatedChat)
+
+          return {
+            chats: updatedChats,
+            oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
+          }
+        }
+        return {}
+      })
+    } else {
+      // Fetch new chat if it doesn't exist
+      try {
+        const res = await axios.get(`/api/v1/chats/${data.chatId}`)
+        const fetchedChat = res.data.result
+
+        useChatStore.setState((state) => {
+          const alreadyExists = state.chats.some((chat) => chat.id === fetchedChat.id)
+          if (alreadyExists) return {}
+
+          const updatedChats = [fetchedChat, ...state.chats]
+          return {
+            chats: updatedChats,
+            oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
+          }
+        })
+      } catch (error) {
+        console.error('Failed to fetch new chat:', error)
+      }
+    }
+  },
+
   subscribeToNotifications: () => {
     const client = useWebSocketStore.getState().client
     const user = useAuthStore.getState().authUser
@@ -85,123 +204,26 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
 
     notificationSubscription = client.subscribe(destination, async (msg: IMessage) => {
-      const data = JSON.parse(msg.body)
-      console.log('[Notification]', data)
+      const response = JSON.parse(msg.body) as WebSocketResponse<any>
+      console.log('Received message:', response)
 
-      if (data.type === 'TYPING') {
-        const { chatId, userId } = data
+      const { event, data } = response
 
-        // Clear existing timeout for this user in this chat
-        const state = get()
-        const chatTimeouts = state.chatTypingTimeouts[chatId] || {}
-        if (chatTimeouts[userId]) {
-          clearTimeout(chatTimeouts[userId])
-        }
+      switch (event) {
+        case ChatEvent.USER_TYPING:
+          get().handleUserTyping(data)
+          break
 
-        // Set new timeout
-        const timeoutId = setTimeout(() => {
-          get().clearChatTypingUser(chatId, userId)
-        }, 5000)
+        case ChatEvent.NEW_MESSAGE:
+          get().handleNewMessage(data)
+          break
 
-        // Update timeouts
-        set((state) => ({
-          chatTypingTimeouts: {
-            ...state.chatTypingTimeouts,
-            [chatId]: {
-              ...chatTimeouts,
-              [userId]: timeoutId,
-            },
-          },
-        }))
+        case ChatEvent.MESSAGE_EDITED:
+        case ChatEvent.MESSAGE_DELETED:
 
-        // Update chat store
-        useChatStore.setState((state) => {
-          const updatedChats = state.chats.map((chat) => {
-            if (chat.id === chatId) {
-              const typingList = chat.typingParticipants || []
-              return {
-                ...chat,
-                typingParticipants: typingList.includes(userId)
-                  ? typingList
-                  : [...typingList, userId],
-              }
-            }
-            return chat
-          })
-          return { chats: updatedChats }
-        })
-      }
-
-      if (data && data.chatId && data.senderName) {
-        // Clear typing indicator for the sender when they send a message
-        get().clearChatTypingUser(data.chatId, data.senderId)
-
-        if (useChatStore.getState().selectedChat?.id === data.chatId) {
+        default:
+          console.error(`Unhandled chat event type: ${event}`, data)
           return
-        }
-
-        const chatExists = useChatStore.getState().chats.some((chat) => chat.id === data.chatId)
-
-        if (chatExists) {
-          const currentUserId = useAuthStore.getState().authUser?.id
-
-          useChatStore.setState((state) => {
-            const updatedChats = [...state.chats]
-            const chatIndex = updatedChats.findIndex((chat) => chat.id === data.chatId)
-
-            if (chatIndex !== -1) {
-              const chat = updatedChats[chatIndex]
-
-              const isFromOtherUser = data.senderId !== currentUserId
-              const isFromSelectedChat = chat.id === useChatStore.getState().selectedChat?.id
-              const shouldUpdateUnreadCount = isFromOtherUser && !isFromSelectedChat
-              const unreadCount = chat.unreadMessageCount || 0
-
-              const updatedChat = {
-                ...chat,
-                lastMessageContent: data.content,
-                lastMessageSenderId: data.senderId,
-                lastMessageSenderName: data.senderName,
-                lastMessageTime: data.createdAt,
-                lastMessageType: data.messageType,
-                lastMessageMediaType: data.mediaType,
-                lastMessageMediaUrl: data.mediaUrl,
-                unreadMessageCount: shouldUpdateUnreadCount ? unreadCount + 1 : unreadCount,
-                // Clear typing participants when message is received
-                typingParticipants: [],
-              }
-
-              updatedChats.splice(chatIndex, 1)
-              updatedChats.unshift(updatedChat)
-
-              return {
-                chats: updatedChats,
-                oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
-              }
-            }
-
-            return {}
-          })
-        } else {
-          try {
-            const res = await axios.get(`/api/v1/chats/${data.chatId}`)
-            const fetchedChat = res.data.result
-
-            useChatStore.setState((state) => {
-              const alreadyExists = state.chats.some((chat) => chat.id === fetchedChat.id)
-              if (alreadyExists) return {}
-
-              const updatedChats = [fetchedChat, ...state.chats]
-
-              return {
-                chats: updatedChats,
-                oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
-              }
-            })
-          } catch (error) {
-            console.error('Failed to fetch new chat:', error)
-          }
-        }
       }
     })
   },
@@ -222,6 +244,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   cleanup: () => {
+    get().unsubscribeFromNotifications()
     set({
       notifications: [],
       chatTypingTimeouts: {},

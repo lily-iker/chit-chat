@@ -5,6 +5,8 @@ import type { Chat } from '@/types/Chat'
 import type { Message } from '@/types/Message'
 import type { IMessage, StompSubscription } from '@stomp/stompjs'
 import { useWebSocketStore } from './useWebSocketStore'
+import { ChatEvent } from '@/types/enum/ChatEvent'
+import type { WebSocketResponse } from '@/types/response/WebSocketResponse'
 
 interface ChatState {
   selectedChat: Chat | null
@@ -285,7 +287,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       client.publish({
         destination: `/app/chat/${chatId}/typing`,
         body: JSON.stringify({
-          type: 'TYPING',
           userId,
           chatId,
         }),
@@ -453,17 +454,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
     chatSubscription?.unsubscribe()
 
     const subscription = client.subscribe(`/topic/${chatId}`, (msg: IMessage) => {
-      const data = JSON.parse(msg.body)
-      console.log('Received message:', data)
+      const response = JSON.parse(msg.body) as WebSocketResponse<any>
+      console.log('Received message:', response)
 
-      if (data.readAt && data.userId) {
-        get().updateMessageReadStatus(data.userId, data.readAt)
-      } else if (data.type === 'TYPING') {
-        get().addTypingUser(data.userId)
-        console.log('User is typing:', data.userId)
-      } else {
-        get().addMessage(data)
-        get().updateSelectedChatOrder(data)
+      const { event, data } = response
+
+      switch (event) {
+        case ChatEvent.USER_TYPING:
+          get().addTypingUser(data.userId)
+          break
+
+        case ChatEvent.CHAT_READ:
+          get().updateMessageReadStatus(data.userId, data.readAt)
+          break
+
+        case ChatEvent.NEW_MESSAGE:
+          get().addMessage(data)
+          get().updateSelectedChatOrder(data)
+          break
+
+        case ChatEvent.MESSAGE_EDITED:
+        case ChatEvent.MESSAGE_DELETED:
+
+        default:
+          console.error(`Unhandled chat event type: ${event}`, data)
+          return
       }
     })
 

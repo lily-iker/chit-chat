@@ -1,11 +1,11 @@
-package chitchat.dto.request.event;
+package chitchat.dto.response.event;
 
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
 @Builder
-public class TypingEventRequest {
+public class TypingEventResponse {
     private String userId;
     private String chatId;
 }

@@ -1,6 +1,7 @@
 package chitchat.controller;
 
 import chitchat.dto.request.message.SendMessageRequest;
+import chitchat.dto.request.message.UpdateMessageRequest;
 import chitchat.dto.response.ApiResponse;
 import chitchat.service.interfaces.MessageService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,27 @@ public class MessageController {
                 new ApiResponse<>(200,
                         "Message sent successfully",
                         messageService.sendMessage(sendMessageRequest, mediaFile)
+                )
+        );
+    }
+
+    @PutMapping("/{messageId}")
+    public ResponseEntity<?> updateMessage(@PathVariable String messageId,
+                                           @RequestBody UpdateMessageRequest updateMessageRequest) throws Exception {
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Message updated successfully",
+                        messageService.updateMessage(messageId, updateMessageRequest)
+                )
+        );
+    }
+
+    @DeleteMapping("/{messageId}")
+    public ResponseEntity<?> deleteMessage(@PathVariable String messageId) throws Exception {
+        messageService.deleteMessage(messageId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Message deleted successfully"
                 )
         );
     }
