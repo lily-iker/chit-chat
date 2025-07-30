@@ -20,10 +20,10 @@ import chitchat.model.enumeration.ChatEvent;
 import chitchat.model.enumeration.MessageType;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.*;
+import chitchat.security.service.CurrentUserService;
 import chitchat.service.MinioService;
 import chitchat.service.interfaces.ChatService;
 import chitchat.service.interfaces.NotificationService;
-import chitchat.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -51,7 +51,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final ChatMapper chatMapper;
     private final UserRepository userRepository;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final MessageRepository messageRepository;
     private final ChatJoinInfoRepository chatJoinInfoRepository;
     private final MessageReadInfoRepository messageReadInfoRepository;
@@ -72,14 +72,14 @@ public class ChatServiceImpl implements ChatService {
             throw new InvalidDataException("A chat cannot have more than " + MAX_GROUP_CHAT_PARTICIPANTS + " participants");
         }
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
-        // Ensure the current user is in the participants list
+        // Ensure the current user is in the participant list
         if (!createChatRequest.getParticipants().contains(currentUser.getUser().getId())) {
             throw new InvalidDataException("You must be a participant of the chat");
         }
 
-        // Ensure the participants list does not contain duplicates
+        // Ensure the participant list does not contain duplicates
         Set<String> uniqueParticipants = new HashSet<>(createChatRequest.getParticipants());
         if (uniqueParticipants.size() != createChatRequest.getParticipants().size()) {
             throw new InvalidDataException("Participants list contains duplicates");
@@ -153,7 +153,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
         return chatMapper.toChatResponse(currentUser, chat);
     }
@@ -164,7 +164,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
         // Check if the chat is a private chat
         if (!chat.getIsGroupChat()) {
@@ -224,7 +224,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
         // Check if the chat is a private chat
         if (!chat.getIsGroupChat()) {
@@ -264,7 +264,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
         // Check if the chat is a private chat
         if (!chat.getIsGroupChat()) {
@@ -336,7 +336,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
         String currentUserId = currentUser.getUser().getId();
 
         // Check if the chat is a private chat
@@ -424,7 +424,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
         // Check if the chat is a private chat
         if (!chat.getIsGroupChat()) {
@@ -475,7 +475,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
         // Check if the chat is a private chat
         if (!chat.getIsGroupChat()) {
@@ -525,7 +525,7 @@ public class ChatServiceImpl implements ChatService {
                                       String sortBy,
                                       String sortDirection,
                                       String beforeChatId) {
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
         String currentUserId = currentUser.getUser().getId();
 
         if (pageNumber < 1) {
@@ -572,7 +572,7 @@ public class ChatServiceImpl implements ChatService {
                                          String sortBy,
                                          String sortDirection) {
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
         String currentUserId = currentUser.getUser().getId();
 
         if (pageNumber < 1) {
@@ -619,7 +619,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
 
         if (!chat.getParticipants().contains(currentUser.getUser().getId())) {
             throw new NoPermissionException("You do not have permission to view messages in this chat");
@@ -667,7 +667,7 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
         String senderId = currentUser.getUser().getId();
 
         if (messageReadInfoRepository.existsByMessageIdAndUserId(chat.getLastMessageId(), senderId)) {

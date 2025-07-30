@@ -4,20 +4,17 @@ import chitchat.constant.CacheConstant;
 import chitchat.dto.request.user.UserInfoRequest;
 import chitchat.dto.response.user.UserInfoResponse;
 import chitchat.dto.response.user.UserProfileResponse;
-import chitchat.exception.AuthenticationException;
 import chitchat.mapper.UserMapper;
 import chitchat.model.User;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.UserNodeRepository;
 import chitchat.repository.UserRepository;
+import chitchat.security.service.CurrentUserService;
 import chitchat.service.MinioService;
 import chitchat.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,29 +25,15 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserNodeRepository userNodeRepository;
+    private final CurrentUserService currentUserService;
     private final UserMapper userMapper;
     private final MinioService minioService;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    /**
-    Should move this method to a separate service like `CurrentUserService`, `SecurityUtils`, or something similar
-    to avoid circular dependencies and allow reuse across other services
-    **/
-    @Override
-    public CustomUserDetails getCurrentUser() {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        Object principal = securityContext.getAuthentication().getPrincipal();
-
-        if (!(principal instanceof UserDetails)) {
-            throw new AuthenticationException("Unauthenticated");
-        }
-        return (CustomUserDetails) principal;
-    }
-
     @Override
     @Transactional
     public UserInfoResponse setUpMyBasicInfo(UserInfoRequest userInfoRequest, MultipartFile profileImageFile) throws Exception {
-        CustomUserDetails userDetails = getCurrentUser();
+        CustomUserDetails userDetails = currentUserService.getCurrentUser();
         User user = userDetails.getUser();
 
         user.setFullName(userInfoRequest.getFullName().trim());
@@ -78,7 +61,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInfoResponse getMyInfo() {
-        CustomUserDetails userDetails = getCurrentUser();
+        CustomUserDetails userDetails = currentUserService.getCurrentUser();
         return userMapper.toUserInfoResponse(userDetails.getUser());
     }
 

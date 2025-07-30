@@ -15,11 +15,11 @@ import chitchat.model.enumeration.MessageType;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.ChatRepository;
 import chitchat.repository.MessageRepository;
+import chitchat.security.service.CurrentUserService;
 import chitchat.service.MinioService;
 import chitchat.service.interfaces.ChatService;
 import chitchat.service.interfaces.MessageService;
 import chitchat.service.interfaces.NotificationService;
-import chitchat.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -38,7 +38,7 @@ public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final ChatRepository chatRepository;
     private final ChatService chatService;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final MessageMapper messageMapper;
     private final NotificationService notificationService;
     private final MinioService minioService;
@@ -50,7 +50,7 @@ public class MessageServiceImpl implements MessageService {
         Chat chat = chatRepository.findById(sendMessageRequest.getChatId())
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
         String currentUserId = currentUser.getUser().getId();
 
         if (!chat.getParticipants().contains(currentUserId)) {
@@ -128,7 +128,7 @@ public class MessageServiceImpl implements MessageService {
         Chat chat = chatRepository.findById(message.getChatId())
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
         String currentUserId = currentUser.getUser().getId();
 
         if (!chat.getParticipants().contains(currentUserId)) {
@@ -190,7 +190,7 @@ public class MessageServiceImpl implements MessageService {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Message not found"));
 
-        CustomUserDetails currentUser = userService.getCurrentUser();
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
         String currentUserId = currentUser.getUser().getId();
 
         if (!message.getSenderId().equals(currentUserId)) {

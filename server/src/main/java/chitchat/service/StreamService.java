@@ -1,8 +1,7 @@
 package chitchat.service;
 
 import chitchat.model.security.CustomUserDetails;
-import chitchat.service.interfaces.UserService;
-import io.getstream.exceptions.StreamException;
+import chitchat.security.service.CurrentUserService;
 import io.getstream.services.framework.StreamSDKClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,10 +17,10 @@ public class StreamService {
     @Value("${stream.secretKey}")
     private String secretKey;
 
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
 
-    public String createStreamToken() throws StreamException {
-        CustomUserDetails customUserDetails = userService.getCurrentUser();
+    public String createStreamToken() {
+        CustomUserDetails customUserDetails = currentUserService.getCurrentUser();
 
         StreamSDKClient client = new StreamSDKClient(apiKey, secretKey);
 

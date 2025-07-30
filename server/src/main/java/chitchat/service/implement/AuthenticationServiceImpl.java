@@ -11,7 +11,7 @@ import chitchat.model.enumeration.TokenType;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.UserNodeRepository;
 import chitchat.repository.UserRepository;
-import chitchat.service.JwtService;
+import chitchat.security.service.JwtService;
 import chitchat.service.interfaces.AuthenticationService;
 import chitchat.utils.CookieUtils;
 import jakarta.servlet.http.Cookie;

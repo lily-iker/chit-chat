@@ -2,7 +2,6 @@ package chitchat.controller;
 
 import chitchat.dto.response.ApiResponse;
 import chitchat.service.StreamService;
-import io.getstream.exceptions.StreamException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +16,7 @@ public class StreamController {
     private final StreamService streamService;
 
     @GetMapping("/token")
-    public ResponseEntity<?> createStreamToken() throws StreamException {
+    public ResponseEntity<?> createStreamToken() {
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
                         "Get stream token successfully",

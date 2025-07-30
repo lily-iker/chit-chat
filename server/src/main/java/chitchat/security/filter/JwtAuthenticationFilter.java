@@ -1,7 +1,7 @@
-package chitchat.filter;
+package chitchat.security.filter;
 
 import chitchat.model.enumeration.TokenType;
-import chitchat.service.JwtService;
+import chitchat.security.service.JwtService;
 import chitchat.utils.CookieUtils;
 import chitchat.utils.ResponseUtils;
 import jakarta.servlet.FilterChain;

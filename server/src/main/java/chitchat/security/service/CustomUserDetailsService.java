@@ -1,4 +1,4 @@
-package chitchat.service;
+package chitchat.security.service;
 
 import chitchat.model.User;
 import chitchat.model.security.CustomUserDetails;

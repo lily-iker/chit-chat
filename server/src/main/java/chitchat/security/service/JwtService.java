@@ -1,4 +1,4 @@
-package chitchat.service;
+package chitchat.security.service;
 
 import chitchat.model.enumeration.TokenType;
 import io.jsonwebtoken.Claims;

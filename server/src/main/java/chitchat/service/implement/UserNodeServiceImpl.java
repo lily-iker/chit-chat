@@ -10,8 +10,8 @@ import chitchat.model.UserNode;
 import chitchat.model.enumeration.RelationshipStatus;
 import chitchat.repository.UserNodeRepository;
 import chitchat.repository.UserRepository;
+import chitchat.security.service.CurrentUserService;
 import chitchat.service.interfaces.UserNodeService;
-import chitchat.service.interfaces.UserService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -30,7 +30,7 @@ public class UserNodeServiceImpl implements UserNodeService {
 
     private final UserNodeRepository userNodeRepository;
     private final UserRepository userRepository;
-    private final UserService userService;
+    private final CurrentUserService currentUserService;
     private final UserMapper userMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
@@ -42,7 +42,7 @@ public class UserNodeServiceImpl implements UserNodeService {
 
     @Override
     public void sendFriendRequest(String targetUserId) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
         if (targetUserId.equals(currentUserId)) {
             throw new IllegalArgumentException("Cannot send friend request to yourself");
         }
@@ -55,14 +55,14 @@ public class UserNodeServiceImpl implements UserNodeService {
     **/
     @Override
     public void cancelFriendRequest(String targetUserId) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
         userNodeRepository.cancelFriendRequest(currentUserId, targetUserId);
         onRelationshipChange(currentUserId, targetUserId);
     }
 
     @Override
     public void acceptFriendRequest(String targetUserId) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
         userNodeRepository.acceptFriendRequest(currentUserId, targetUserId);
         onRelationshipChange(currentUserId, targetUserId);
     }
@@ -72,21 +72,21 @@ public class UserNodeServiceImpl implements UserNodeService {
     **/
     @Override
     public void rejectFriendRequest(String targetUserId) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
         userNodeRepository.rejectFriendRequest(currentUserId, targetUserId);
         onRelationshipChange(currentUserId, targetUserId);
     }
 
     @Override
     public void removeFriend(String targetUserId) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
         userNodeRepository.removeFriend(currentUserId, targetUserId);
         onRelationshipChange(currentUserId, targetUserId);
     }
 
     @Override
     public void blockUser(String targetUserId) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
         if (targetUserId.equals(currentUserId)) {
             throw new IllegalArgumentException("Cannot block yourself");
         }
@@ -96,7 +96,7 @@ public class UserNodeServiceImpl implements UserNodeService {
 
     @Override
     public void unblockUser(String targetUserId) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
         userNodeRepository.unblockUser(currentUserId, targetUserId);
         onRelationshipChange(currentUserId, targetUserId);
     }
@@ -120,7 +120,7 @@ public class UserNodeServiceImpl implements UserNodeService {
     @Override
     // Should use cursor-based pagination and SSCAN in Redis for better performance
     public PageResponse<?> getFriends(int pageNumber, int pageSize) {
-        String userId = userService.getCurrentUser().getUser().getId();
+        String userId = currentUserService.getCurrentUser().getUser().getId();
 
         String cacheKey = generateRelationshipCacheKey(userId, CacheConstant.FRIENDS_CACHE_PREFIX);
         Set<Object> allFriendIdsObject = redisTemplate.opsForSet().members(cacheKey);
@@ -160,7 +160,7 @@ public class UserNodeServiceImpl implements UserNodeService {
 
     @Override
     public PageResponse<?> getBlockedUsers(int pageNumber, int pageSize) {
-        String userId = userService.getCurrentUser().getUser().getId();
+        String userId = currentUserService.getCurrentUser().getUser().getId();
 
         String cacheKey = generateRelationshipCacheKey(userId, CacheConstant.BLOCKED_CACHE_PREFIX);
         Set<Object> allBlockedIdsObject = redisTemplate.opsForSet().members(cacheKey);
@@ -196,7 +196,7 @@ public class UserNodeServiceImpl implements UserNodeService {
 
     @Override
     public PageResponse<?> getIncomingFriendRequests(int pageNumber, int pageSize) {
-        String userId = userService.getCurrentUser().getUser().getId();
+        String userId = currentUserService.getCurrentUser().getUser().getId();
 
         String cacheKey = generateRelationshipCacheKey(userId, CacheConstant.INCOMING_REQUESTS_CACHE_PREFIX);
         Set<Object> allIncomingIdsObject = redisTemplate.opsForSet().members(cacheKey);
@@ -232,7 +232,7 @@ public class UserNodeServiceImpl implements UserNodeService {
 
     @Override
     public PageResponse<?> getSentFriendRequests(int pageNumber, int pageSize) {
-        String userId = userService.getCurrentUser().getUser().getId();
+        String userId = currentUserService.getCurrentUser().getUser().getId();
 
         String cacheKey = generateRelationshipCacheKey(userId, CacheConstant.SENT_REQUESTS_CACHE_PREFIX);
         Set<Object> allSentIdsObject = redisTemplate.opsForSet().members(cacheKey);
@@ -268,7 +268,7 @@ public class UserNodeServiceImpl implements UserNodeService {
 
     @Override
     public PageResponse<?> searchFriends(String query, int pageNumber, int pageSize, String sortBy, String sortDirection) {
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
 
         // Get friend IDs from cache or database
         String cacheKey = generateRelationshipCacheKey(currentUserId, CacheConstant.FRIENDS_CACHE_PREFIX);
@@ -345,7 +345,7 @@ public class UserNodeServiceImpl implements UserNodeService {
             throw new IllegalArgumentException("Search query cannot be null or empty");
         }
 
-        String currentUserId = userService.getCurrentUser().getUser().getId();
+        String currentUserId = currentUserService.getCurrentUser().getUser().getId();
 
         String cacheKey = generateSearchCacheKey(currentUserId, query, pageNumber, pageSize);
         Object cachedObject = redisTemplate.opsForValue().get(cacheKey);

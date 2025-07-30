@@ -1,6 +1,6 @@
 package chitchat.configuration.websocket;
 
-import chitchat.service.JwtService;
+import chitchat.security.service.JwtService;
 import chitchat.utils.CookieUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
