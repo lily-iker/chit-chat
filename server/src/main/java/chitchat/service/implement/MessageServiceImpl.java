@@ -143,13 +143,16 @@ public class MessageServiceImpl implements MessageService {
         if (message.getIsDeleted()) {
             throw new IllegalArgumentException("Cannot update a deleted message");
         }
-
         String newContent = updateMessageRequest.getNewContent();
-        if (newContent != null && !newContent.isBlank()) {
-            message.setContent(newContent);
-            message.setIsEdited(true);
-            messageRepository.save(message);
+        if (newContent == null || newContent.isBlank()) {
+            throw new IllegalArgumentException("New content cannot be empty");
         }
+
+        message.setContent(newContent);
+        message.setIsEdited(true);
+        messageRepository.save(message);
+
+        markReplyMessageAsEdited(message.getId());
 
         MessageResponse messageResponse = messageMapper.toMessageResponse(message);
 
@@ -259,11 +262,19 @@ public class MessageServiceImpl implements MessageService {
         return messageType;
     }
 
-    // TODO: update also like markReplyMessagesAsDeleted
-
+    // Mark all messages that reference the given message ID as edited
     @Async
+    private void markReplyMessageAsEdited(String messageId) {
+        List<Message> referencingMessages = messageRepository.findByReplyToMessageId(messageId);
+        for (Message message : referencingMessages) {
+            message.setIsReplyMessageEdited(true);
+        }
+        messageRepository.saveAll(referencingMessages);
+    }
+
     // Mark all messages that reference the given message ID as deleted
-    public void markReplyMessagesAsDeleted(String messageId) {
+    @Async
+    private void markReplyMessagesAsDeleted(String messageId) {
         List<Message> referencingMessages = messageRepository.findByReplyToMessageId(messageId);
         for (Message message : referencingMessages) {
             message.setIsReplyMessageDeleted(true);
