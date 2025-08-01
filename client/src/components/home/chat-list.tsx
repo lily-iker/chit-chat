@@ -122,6 +122,21 @@ const ChatList = () => {
         : chat.lastMessageSenderName && chat.lastMessageSenderName
       : chat.lastMessageSenderId === authUser?.id && 'You'
 
+    // Handle deleted message preview
+    if (chat.isLastMessageDeleted) {
+      return (
+        <span className="italic text-base-content/50">
+          {chat.isGroupChat
+            ? sender
+              ? `${sender} deleted a message`
+              : 'A message was deleted'
+            : chat.lastMessageSenderId === authUser?.id
+            ? 'You deleted a message'
+            : 'A message was deleted'}
+        </span>
+      )
+    }
+
     // if (chat.lastMessageType === MessageType.AUDIO) {
     //   return (
     //     <div className="flex items-center gap-1 text-base-content/70">
@@ -234,7 +249,7 @@ const ChatList = () => {
         ref={chatsContainerRef}
         className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-base-300 scrollbar-track-transparent"
       >
-        {displayLoading && displayChats.length === 0 ? (
+        {displayLoading ? (
           <ChatsSkeleton />
         ) : displayChats.length === 0 ? (
           // Empty state
