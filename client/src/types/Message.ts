@@ -10,8 +10,11 @@ export interface Message {
   mediaUrl?: string | null
   replyToMessageId?: string | null
   replyToMessageContent?: string | null
+  replyToMessageType?: MessageType | null
+  replyToMessageMediaUrl?: string | null
   replyToMessageSenderId?: string | null
-  replyToMessageSenderName?: string | null
+  isReplyMessageEdited?: boolean
+  isReplyMessageDeleted?: boolean
   isEdited?: boolean
   isDeleted?: boolean
   createdAt: string

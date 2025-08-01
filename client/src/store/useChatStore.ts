@@ -38,6 +38,8 @@ interface ChatState {
   loadMoreMessages: (chatId: string) => Promise<void>
   loadMoreChats: () => Promise<void>
   addMessage: (message: Message) => void
+  updateMessage: (message: Message) => void
+  deleteMessage: (messageId: string) => void
   markChatAsRead: (chatId: string) => Promise<void>
   updateMessageReadStatus: (userId: string, readAt: string) => void
   sendTypingEvent: (chatId: string, userId: string) => void
@@ -249,6 +251,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     }),
 
+  updateMessage: (updatedMessage: Message) =>
+    set((state) => {
+      const updatedMessages = state.selectedChatMessages.map((message) =>
+        message.id === updatedMessage.id ? updatedMessage : message
+      )
+
+      return {
+        selectedChatMessages: updatedMessages,
+      }
+    }),
+
+  deleteMessage: (messageId: string) =>
+    set((state) => {
+      const updatedMessages = state.selectedChatMessages.map((message) =>
+        message.id === messageId ? { ...message, isDeleted: true } : message
+      )
+
+      return {
+        selectedChatMessages: updatedMessages,
+      }
+    }),
+
   markChatAsRead: async (chatId: string) => {
     try {
       await axios.put(`/api/v1/chats/mark-as-read/${chatId}`)
@@ -361,6 +385,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           lastMessageTime: message.createdAt,
           lastMessageType: message.messageType,
           lastMessageMediaUrl: message.mediaUrl,
+          isLastMessageDeleted: false,
         }
 
         updatedChats.splice(chatIndex, 1)
@@ -474,7 +499,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
           break
 
         case ChatEvent.MESSAGE_EDITED:
+          get().updateMessage(data)
+          break
+
         case ChatEvent.MESSAGE_DELETED:
+          get().deleteMessage(data.id)
+          // get().updateChatLastMessage(data.chatId, data.content, true)
+          break
 
         default:
           console.error(`Unhandled chat event type: ${event}`, data)

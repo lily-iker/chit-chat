@@ -24,6 +24,8 @@ interface NotificationState {
   clearChatTypingUser: (chatId: string, userId: string) => void
   handleUserTyping: (data: any) => void
   handleNewMessage: (data: any) => void
+  handleLastMessageUpdated: (data: any) => void
+  handleLastMessageDeleted: (data: any) => void
   cleanup: () => void
 }
 
@@ -149,8 +151,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
             lastMessageSenderName: data.senderName,
             lastMessageTime: data.createdAt,
             lastMessageType: data.messageType,
-            lastMessageMediaType: data.mediaType,
             lastMessageMediaUrl: data.mediaUrl,
+            isLastMessageDeleted: false,
             unreadMessageCount: shouldUpdateUnreadCount ? unreadCount + 1 : unreadCount,
             // Clear typing participants when message is received
             typingParticipants: [],
@@ -189,6 +191,42 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
   },
 
+  handleLastMessageUpdated: (data: any) => {
+    // Update chat list if this is the last message
+    useChatStore.setState((state) => {
+      const updatedChats = state.chats.map((chat) => {
+        if (chat.id === data.chatId) {
+          return {
+            ...chat,
+            lastMessageContent: data.content,
+            lastMessageTime: data.updatedAt,
+            isLastMessageDeleted: false,
+          }
+        }
+        return chat
+      })
+      return { chats: updatedChats }
+    })
+  },
+
+  handleLastMessageDeleted: (data: any) => {
+    // Update chat list if this is the last message
+    useChatStore.setState((state) => {
+      const updatedChats = state.chats.map((chat) => {
+        if (chat.id === data.chatId) {
+          return {
+            ...chat,
+            lastMessageContent: null,
+            isLastMessageDeleted: true,
+            lastMessageTime: new Date().toISOString(),
+          }
+        }
+        return chat
+      })
+      return { chats: updatedChats }
+    })
+  },
+
   subscribeToNotifications: () => {
     const client = useWebSocketStore.getState().client
     const user = useAuthStore.getState().authUser
@@ -219,7 +257,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
           break
 
         case ChatEvent.MESSAGE_EDITED:
+          get().handleLastMessageUpdated(data)
+          break
+
         case ChatEvent.MESSAGE_DELETED:
+          get().handleLastMessageDeleted(data)
+          break
 
         default:
           console.error(`Unhandled chat event type: ${event}`, data)

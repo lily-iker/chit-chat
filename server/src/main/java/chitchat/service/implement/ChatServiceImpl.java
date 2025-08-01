@@ -730,6 +730,9 @@ public class ChatServiceImpl implements ChatService {
         chat.setLastMessageContent(lastMessage.getContent());
         chat.setLastMessageType(lastMessage.getMessageType());
         chat.setLastMessageTime(lastMessage.getCreatedAt());
+        if (chat.getIsLastMessageDeleted() != null && chat.getIsLastMessageDeleted()) {
+            chat.setIsLastMessageDeleted(false);
+        }
         if (sender != null) {
             chat.setLastMessageSenderId(sender.getId());
             chat.setLastMessageSenderName(sender.getFullName());
