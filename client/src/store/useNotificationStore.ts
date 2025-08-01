@@ -17,8 +17,7 @@ export type Notification = {
 interface NotificationState {
   notifications: Notification[]
   chatTypingTimeouts: Record<string, Record<string, NodeJS.Timeout>> // chatId -> userId -> timeout
-  subscribeToNotifications: () => void
-  unsubscribeFromNotifications: () => void
+
   addNotification: (notification: Notification) => void
   clearNotifications: () => void
   clearChatTypingUser: (chatId: string, userId: string) => void
@@ -26,6 +25,11 @@ interface NotificationState {
   handleNewMessage: (data: any) => void
   handleLastMessageUpdated: (data: any) => void
   handleLastMessageDeleted: (data: any) => void
+  handleNewChat: (data: any) => void
+
+  subscribeToNotifications: () => void
+  unsubscribeFromNotifications: () => void
+
   cleanup: () => void
 }
 
@@ -227,6 +231,44 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     })
   },
 
+  handleNewChat: (data: any) => {
+    console.log('[Notification] New chat created:', data)
+
+    // Add the new chat to the chat store
+    useChatStore.setState((state) => {
+      const alreadyExists = state.chats.some((chat) => chat.id === data.id)
+      if (alreadyExists) return {}
+
+      const newChat = {
+        id: data.id,
+        name: data.name,
+        chatImageUrl: data.chatImageUrl,
+        isGroupChat: data.isGroupChat,
+        lastMessageId: data.lastMessageId,
+        lastMessageContent: data.lastMessageContent,
+        lastMessageSenderId: data.lastMessageSenderId,
+        lastMessageSenderName: data.lastMessageSenderName,
+        lastMessageType: data.lastMessageType,
+        lastMessageMediaUrl: data.lastMessageMediaUrl,
+        lastMessageTime: data.lastMessageTime,
+        isLastMessageDeleted: data.isLastMessageDeleted,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        createdBy: data.createdBy,
+        participantsInfo: data.participantsInfo,
+        admins: data.admins ?? [],
+        unreadMessageCount: data.unreadMessageCount || 1,
+        typingParticipants: [],
+      }
+
+      const updatedChats = [newChat, ...state.chats]
+      return {
+        chats: updatedChats,
+        oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
+      }
+    })
+  },
+
   subscribeToNotifications: () => {
     const client = useWebSocketStore.getState().client
     const user = useAuthStore.getState().authUser
@@ -262,6 +304,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
         case ChatEvent.MESSAGE_DELETED:
           get().handleLastMessageDeleted(data)
+          break
+
+        case ChatEvent.NEW_CHAT:
+          get().handleNewChat(data)
           break
 
         default:

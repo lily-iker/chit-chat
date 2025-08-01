@@ -113,7 +113,11 @@ public class ChatServiceImpl implements ChatService {
                 // Save chat join info for all participants
                 saveChatJoinInfo(newPrivateChat, currentUser, createChatRequest.getParticipants());
 
-                return chatMapper.toChatResponse(currentUser, newPrivateChat);
+                ChatResponse chatResponse = chatMapper.toChatResponse(currentUser, newPrivateChat);
+
+                notifyParticipantsAboutNewChat(newPrivateChat, currentUser, chatResponse);
+
+                return chatResponse;
             }
         }
 
@@ -145,7 +149,11 @@ public class ChatServiceImpl implements ChatService {
         // Save chat join info for all participants
         saveChatJoinInfo(newGroupChat, currentUser, createChatRequest.getParticipants());
 
-        return chatMapper.toChatResponse(currentUser, newGroupChat);
+        ChatResponse chatResponse = chatMapper.toChatResponse(currentUser, newGroupChat);
+
+        notifyParticipantsAboutNewChat(newGroupChat, currentUser, chatResponse);
+
+        return chatResponse;
     }
 
     @Override
@@ -765,5 +773,17 @@ public class ChatServiceImpl implements ChatService {
                 chatJoinInfoRepository.findByChatIdAndAddedUserId(chat.getId(), targetUserId);
 
         chatJoinInfo.ifPresent(chatJoinInfoRepository::delete);
+    }
+
+    private void notifyParticipantsAboutNewChat(Chat chat, CustomUserDetails currentUser, ChatResponse response) {
+        WebSocketResponse<ChatResponse> socketResponse = new WebSocketResponse<>(ChatEvent.NEW_CHAT, response);
+        for (String participantId : chat.getParticipants()) {
+            if (!participantId.equals(currentUser.getUser().getId())) {
+                notificationService.sendNotification(
+                        WebSocketDestination.USER_NOTIFICATION_PREFIX + participantId,
+                        socketResponse
+                );
+            }
+        }
     }
 }

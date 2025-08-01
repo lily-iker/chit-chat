@@ -531,7 +531,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })
   },
 
-  cleanup: () =>
+  cleanup: () => {
+    get().unsubscribe()
     set({
       selectedChat: null,
       selectedChatMessages: [],
@@ -548,5 +549,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       oldestLoadedMessageId: null,
       typingUserIds: [],
       typingTimeouts: {},
-    }),
+    })
+  },
 }))
