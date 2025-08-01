@@ -5,6 +5,6 @@ public enum ChatEvent {
     MESSAGE_EDITED,
     MESSAGE_DELETED,
     CHAT_READ,
-    CHAT_CREATED,
+    NEW_CHAT,
     USER_TYPING,
 }

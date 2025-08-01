@@ -504,7 +504,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         case ChatEvent.MESSAGE_DELETED:
           get().deleteMessage(data.id)
-          // get().updateChatLastMessage(data.chatId, data.content, true)
           break
 
         default:
