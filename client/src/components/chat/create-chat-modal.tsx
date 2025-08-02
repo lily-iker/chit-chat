@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 import axios from '@/lib/axios-custom'
 import toast from 'react-hot-toast'
 import type { UserProfileResponse } from '@/types/response/UserProfileResponse'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 interface CreateChatModalProps {
   isOpen: boolean
@@ -229,10 +230,7 @@ const CreateChatModal = ({ isOpen, onClose }: CreateChatModalProps) => {
               {selectedParticipants.map((participant) => (
                 <div key={participant.id} className="badge badge-primary gap-2 py-3">
                   <img
-                    src={
-                      participant.profileImageUrl ||
-                      '/placeholder.svg?height=20&width=20&query=user avatar'
-                    }
+                    src={participant.profileImageUrl || DEFAULT_PROFILE_IMAGE}
                     alt={participant.fullName}
                     className="w-4 h-4 rounded-full"
                   />
@@ -290,10 +288,7 @@ const CreateChatModal = ({ isOpen, onClose }: CreateChatModalProps) => {
                         <div className="avatar">
                           <div className="w-10 h-10 rounded-full">
                             <img
-                              src={
-                                user.profileImageUrl ||
-                                '/placeholder.svg?height=40&width=40&query=user avatar'
-                              }
+                              src={user.profileImageUrl || DEFAULT_PROFILE_IMAGE}
                               alt={user.fullName}
                               className="w-full h-full object-cover"
                             />

@@ -6,6 +6,7 @@ import MessageActions from './message-actions'
 import MessageEditForm from './message-edit-form'
 import { useState } from 'react'
 import DateDivider from '../home/date-divider'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 interface ChatMessageProps {
   message: Message
@@ -68,11 +69,7 @@ export default function ChatMessage({
             {showProfileImage ? (
               <div className="w-8 h-8 rounded-full overflow-hidden">
                 <img
-                  src={
-                    senderInfo?.profileImageUrl ||
-                    '/placeholder.svg?height=96&width=96&query=user profile image' ||
-                    '/placeholder.svg'
-                  }
+                  src={senderInfo?.profileImageUrl || DEFAULT_PROFILE_IMAGE}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -213,14 +210,7 @@ export default function ChatMessage({
             {showProfileImage && (
               <div className="w-8 h-8 rounded-full overflow-hidden">
                 <img
-                  src={
-                    senderInfo?.profileImageUrl ||
-                    '/placeholder.svg?height=96&width=96&query=user profile image' ||
-                    '/placeholder.svg' ||
-                    '/placeholder.svg' ||
-                    '/placeholder.svg' ||
-                    '/placeholder.svg'
-                  }
+                  src={senderInfo?.profileImageUrl || DEFAULT_PROFILE_IMAGE}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -246,14 +236,7 @@ export default function ChatMessage({
                   )}`}
                 >
                   <img
-                    src={
-                      participant?.profileImageUrl ||
-                      '/placeholder.svg?height=96&width=96&query=user profile image' ||
-                      '/placeholder.svg' ||
-                      '/placeholder.svg' ||
-                      '/placeholder.svg' ||
-                      '/placeholder.svg'
-                    }
+                    src={participant?.profileImageUrl || DEFAULT_PROFILE_IMAGE}
                     alt="Seen"
                     className="w-full h-full object-cover rounded-full"
                   />

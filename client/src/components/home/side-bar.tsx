@@ -8,6 +8,7 @@ import type { Chat } from '@/types/Chat'
 import { MessageType } from '@/types/enum/MessageType'
 import ChatTime from './chat-time'
 import CreateChatModal from '../chat/create-chat-modal'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 const Sidebar = () => {
   const {
@@ -272,7 +273,7 @@ const Sidebar = () => {
                   <div className="relative">
                     <div className="w-12 h-12 rounded-full overflow-hidden">
                       <img
-                        src={chat.chatImageUrl || '/avatar.png'}
+                        src={chat.chatImageUrl || DEFAULT_PROFILE_IMAGE}
                         alt={chat.name || 'Chat Avatar'}
                         className="w-full h-full object-cover"
                       />

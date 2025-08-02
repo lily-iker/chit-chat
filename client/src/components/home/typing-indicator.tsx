@@ -1,5 +1,6 @@
 import { useChatStore } from '@/store/useChatStore'
 import { useAuthStore } from '@/store/useAuthStore'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 const TypingIndicator = () => {
   const { typingUserIds, selectedChat } = useChatStore()
@@ -32,10 +33,7 @@ const TypingIndicator = () => {
             }}
           >
             <img
-              src={
-                typingUser.profileImageUrl ||
-                'https://avatars.githubusercontent.com/u/157276347?s=96&v=4'
-              }
+              src={typingUser.profileImageUrl || DEFAULT_PROFILE_IMAGE}
               alt="Typing user"
               className="w-full h-full object-cover"
             />

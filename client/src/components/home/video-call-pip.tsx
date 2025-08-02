@@ -14,6 +14,7 @@ import {
   StreamTheme,
   CallingState,
 } from '@stream-io/video-react-sdk'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 const PiPVideoContent = () => {
   const { useCallCallingState } = useCallStateHooks()
@@ -111,7 +112,7 @@ const VideoCallPiP = () => {
         <div className="flex items-center gap-2">
           <div className="avatar">
             <div className="w-6 h-6 rounded-full">
-              <img src={selectedChat?.chatImageUrl || '/avatar.png'} alt="Chat Avatar" />
+              <img src={selectedChat?.chatImageUrl || DEFAULT_PROFILE_IMAGE} alt="Chat Avatar" />
             </div>
           </div>
           <div>

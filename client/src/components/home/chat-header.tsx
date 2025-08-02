@@ -3,6 +3,7 @@ import { useChatStore } from '@/store/useChatStore'
 import { useVideoCallStore } from '@/store/useVideoCall'
 import { useAuthStore } from '@/store/useAuthStore'
 import toast from 'react-hot-toast'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 const ChatHeader = () => {
   const { selectedChat, setSelectedChat, unsubscribe } = useChatStore()
@@ -58,7 +59,7 @@ const ChatHeader = () => {
           {/* Avatar */}
           <div className="avatar">
             <div className="size-10 rounded-full relative">
-              <img src={selectedChat.chatImageUrl || '/avatar.png'} alt="Chat Avatar" />
+              <img src={selectedChat.chatImageUrl || DEFAULT_PROFILE_IMAGE} alt="Chat Avatar" />
             </div>
           </div>
           {/* Chat name and status */}

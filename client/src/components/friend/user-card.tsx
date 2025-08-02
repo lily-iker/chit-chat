@@ -3,6 +3,7 @@ import { UserPlus, UserX, Check, X, Shield, ShieldOff } from 'lucide-react'
 import { RelationshipStatus } from '@/types/enum/RelationshipStatus'
 import type { UserSearchResponse } from '@/types/response/UserSearchResponse'
 import { useRelationshipStore } from '@/store/useRelationshipStore'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 interface UserCardProps {
   user: UserSearchResponse
@@ -140,9 +141,7 @@ const UserCard = React.memo(({ user, showActions = true }: UserCardProps) => {
           <div className="avatar">
             <div className="w-12 h-12 rounded-full">
               <img
-                src={
-                  user.profileImageUrl || '/placeholder.svg?height=48&width=48&query=user avatar'
-                }
+                src={user.profileImageUrl || DEFAULT_PROFILE_IMAGE}
                 alt={user.fullName}
                 className="w-full h-full object-cover"
               />

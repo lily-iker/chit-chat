@@ -14,6 +14,7 @@ import {
   CallingState,
 } from '@stream-io/video-react-sdk'
 import '@stream-io/video-react-sdk/dist/css/styles.css'
+import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 const VideoCallContent = () => {
   const { useCallCallingState } = useCallStateHooks()
@@ -65,7 +66,7 @@ const VideoCallModal = () => {
           <div className="flex items-center gap-3">
             <div className="avatar">
               <div className="w-8 h-8 rounded-full">
-                <img src={selectedChat?.chatImageUrl || '/avatar.png'} alt="Chat Avatar" />
+                <img src={selectedChat?.chatImageUrl || DEFAULT_PROFILE_IMAGE} alt="Chat Avatar" />
               </div>
             </div>
             <div>
