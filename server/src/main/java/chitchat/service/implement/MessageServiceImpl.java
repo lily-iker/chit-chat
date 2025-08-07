@@ -74,7 +74,9 @@ public class MessageServiceImpl implements MessageService {
                 .replyToMessageId(sendMessageRequest.getReplyToMessageId())
                 .replyToMessageContent(replyToMessage != null ? replyToMessage.getContent() : null)
                 .replyToMessageSenderId(replyToMessage != null ? replyToMessage.getSenderId() : null)
-                .isReplyMessageDeleted(replyToMessage != null ? false : null)
+                .replyToMessageType(replyToMessage != null ? replyToMessage.getMessageType() : null)
+                .replyToMessageMediaUrl(replyToMessage != null ? replyToMessage.getMediaUrl() : null)
+                .isReplyMessageEdited(replyToMessage != null ? replyToMessage.getIsEdited() : null)
                 .isReplyMessageDeleted(replyToMessage != null ? false : null)
                 .build();
 
