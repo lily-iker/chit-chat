@@ -18,12 +18,15 @@ import chitchat.mapper.MessageMapper;
 import chitchat.model.*;
 import chitchat.model.enumeration.ChatEvent;
 import chitchat.model.enumeration.MessageType;
+import chitchat.model.enumeration.SystemMessageAction;
+import chitchat.model.message.SystemMessage;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.*;
 import chitchat.security.service.CurrentUserService;
 import chitchat.service.MinioService;
 import chitchat.service.interfaces.ChatService;
 import chitchat.service.interfaces.NotificationService;
+import chitchat.utils.SystemMessageUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +62,7 @@ public class ChatServiceImpl implements ChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
     private final MinioService minioService;
+    private final SystemMessageUtils systemMessageUtils;
 
     @Override
     @Transactional
@@ -101,14 +105,21 @@ public class ChatServiceImpl implements ChatService {
                 newPrivateChat.setCreatedBy(currentUser.getUser().getId());
                 chatRepository.save(newPrivateChat);
 
+                SystemMessage systemMessage = SystemMessage.builder()
+                        .actorId(currentUser.getUser().getId())
+                        .action(SystemMessageAction.CREATE_PRIVATE_CHAT)
+                        .metadata(Map.of("newPrivateChat", "Private chat initialized"))
+                        .build();
+                String jsonContent = systemMessageUtils.convertToJson(systemMessage);
+
                 Message initMessage = Message.builder()
                         .chatId(newPrivateChat.getId())
                         .messageType(MessageType.SYSTEM)
-                        .content("You can now chat with each other")
+                        .content(jsonContent)
                         .build();
                 messageRepository.save(initMessage);
 
-                updateChatLastMessage(newPrivateChat, initMessage, null);
+                updateChatLastMessage(newPrivateChat, initMessage, currentUser.getUser());
 
                 // Save chat join info for all participants
                 saveChatJoinInfo(newPrivateChat, currentUser, createChatRequest.getParticipants());
@@ -137,14 +148,21 @@ public class ChatServiceImpl implements ChatService {
 
         chatRepository.save(newGroupChat);
 
+        SystemMessage systemMessage = SystemMessage.builder()
+                .actorId(currentUser.getUser().getId())
+                .action(SystemMessageAction.CREATE_GROUP_CHAT)
+                .metadata(Map.of("newGroupChat", createChatRequest.getName()))
+                .build();
+        String jsonContent = systemMessageUtils.convertToJson(systemMessage);
+
         Message initMessage = Message.builder()
                 .chatId(newGroupChat.getId())
                 .messageType(MessageType.SYSTEM)
-                .content("New group chat created by " + currentUser.getUser().getFullName())
+                .content(jsonContent)
                 .build();
         messageRepository.save(initMessage);
 
-        updateChatLastMessage(newGroupChat, initMessage, null);
+        updateChatLastMessage(newGroupChat, initMessage, currentUser.getUser());
 
         // Save chat join info for all participants
         saveChatJoinInfo(newGroupChat, currentUser, createChatRequest.getParticipants());
@@ -167,8 +185,18 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    public ChatResponse getChatOverview(String chatId) {
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
+
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
+
+        return chatMapper.toOverviewChatResponse(currentUser, chat);
+    }
+
+    @Override
     @Transactional
-    public ChatResponse updateChat(String chatId, UpdateChatRequest updateChatRequest, MultipartFile chatImageFile) {
+    public ChatResponse updateChat(String chatId, UpdateChatRequest updateChatRequest, MultipartFile chatImageFile) throws Exception {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
 
@@ -185,49 +213,73 @@ public class ChatServiceImpl implements ChatService {
         }
 
         Message latestMessage = null;
+        List<Message> systemMessages = new ArrayList<>();
 
-        if (!updateChatRequest.getName().isEmpty()) {
+        if (updateChatRequest.getName() != null && !updateChatRequest.getName().equals(chat.getName())) {
             chat.setName(updateChatRequest.getName());
 
-            // Create and save the system message for name update
-            Message updateNameMessage = Message.builder()
-                    .chatId(chat.getId())
-                    .messageType(MessageType.SYSTEM)
-                    .content(currentUser.getUser().getFullName() + " updated chat name to " + updateChatRequest.getName())
-                    .build();
-            latestMessage = messageRepository.save(updateNameMessage);
+            latestMessage = createSystemMessage(
+                    chat.getId(),
+                    currentUser.getUser().getId(),
+                    SystemMessageAction.UPDATE_GROUP_CHAT_NAME,
+                    Map.of("newGroupChatName", updateChatRequest.getName())
+            );
+            messageRepository.save(latestMessage);
+            systemMessages.add(latestMessage);
         }
 
         if (chatImageFile != null) {
-            // TODO: upload image and set the URL
-            String chatImageUrl = "new_image_url";
+            String chatImageUrl = minioService.uploadFileToPublicBucket(chatImageFile);
             chat.setChatImageUrl(chatImageUrl);
 
-            // Create and save the system message for image update
-            Message updateImageMessage = Message.builder()
-                    .chatId(chat.getId())
-                    .messageType(MessageType.SYSTEM)
-                    .content(currentUser.getUser().getFullName() + " updated the chat image")
-                    .build();
-            latestMessage = messageRepository.save(updateImageMessage);
+            latestMessage = createSystemMessage(
+                    chat.getId(),
+                    currentUser.getUser().getId(),
+                    SystemMessageAction.UPDATE_GROUP_CHAT_IMAGE,
+                    Map.of("newGroupChatImage", "Chat image updated")
+            );
+            messageRepository.save(latestMessage);
+            systemMessages.add(latestMessage);
         }
 
         if (latestMessage != null) {
-            chat.setLastMessageId(latestMessage.getId());
-            chat.setLastMessageContent(latestMessage.getContent());
-            chat.setLastMessageSenderId(currentUser.getUser().getId());
-            chat.setLastMessageSenderName(currentUser.getUser().getFullName());
-            chat.setLastMessageType(latestMessage.getMessageType());
-            chat.setLastMessageTime(latestMessage.getCreatedAt());
+            updateChatLastMessage(chat, latestMessage, currentUser.getUser());
         }
 
-        chatRepository.save(chat);
-        return chatMapper.toChatResponse(currentUser, chat);
+        int count = 0;
+        for (Message message : systemMessages) {
+            MessageResponse messageResponse = messageMapper.toMessageResponse(message);
+
+            WebSocketResponse<MessageResponse> webSocketResponse =
+                    new WebSocketResponse<>(ChatEvent.NEW_MESSAGE, messageResponse);
+
+            messagingTemplate.convertAndSend(
+                    WebSocketDestination.CHAT_TOPIC_PREFIX + chatId,
+                    webSocketResponse
+            );
+            count++;
+        }
+
+//        Don't need to save here (chat already has id unlike new chat creation)
+//        chatRepository.save(chat);
+        ChatResponse response = chatMapper.toChatResponse(currentUser, chat);
+        response.setUnreadMessageCount(count);
+
+        WebSocketResponse<ChatResponse> socketResponse = new WebSocketResponse<>(ChatEvent.CHAT_UPDATED, response);
+        for (String participantId : chat.getParticipants()) {
+            if (!participantId.equals(currentUser.getUser().getId())) {
+                notificationService.sendNotification(
+                        WebSocketDestination.USER_NOTIFICATION_PREFIX + participantId,
+                        socketResponse
+                );
+            }
+        }
+
+        return response;
     }
 
     @Override
     @Transactional
-    // TODO: enhance this : async
     public void deleteChat(String chatId) {
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
@@ -785,5 +837,19 @@ public class ChatServiceImpl implements ChatService {
                 );
             }
         }
+    }
+
+    private Message createSystemMessage(String chatId, String actorId, SystemMessageAction action, Map<String, Object> metadata) {
+        SystemMessage systemMessage = SystemMessage.builder()
+                .actorId(actorId)
+                .action(action)
+                .metadata(metadata)
+                .build();
+
+        return Message.builder()
+                .chatId(chatId)
+                .messageType(MessageType.SYSTEM)
+                .content(systemMessageUtils.convertToJson(systemMessage))
+                .build();
     }
 }

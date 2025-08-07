@@ -43,10 +43,20 @@ public class ChatController {
         );
     }
 
+    @GetMapping("/{chatId}/overview")
+    public ResponseEntity<?> getChatOverview(@PathVariable String chatId) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Chat overview retrieved successfully",
+                        chatService.getChatOverview(chatId)
+                )
+        );
+    }
+
     @PutMapping("/{chatId}")
     public ResponseEntity<?> updateChat(@PathVariable String chatId,
                                         @RequestPart @Valid UpdateChatRequest updateChatRequest,
-                                        @RequestPart(value = "chatImageFile", required = false) MultipartFile chatImageFile) {
+                                        @RequestPart(value = "chatImageFile", required = false) MultipartFile chatImageFile) throws Exception {
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
                         "Chat updated successfully",

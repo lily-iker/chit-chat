@@ -15,7 +15,8 @@ import java.util.List;
 public interface ChatService {
     ChatResponse createChat(CreateChatRequest createChatRequest, MultipartFile chatImageFile) throws Exception;
     ChatResponse getChat(String chatId);
-    ChatResponse updateChat(String chatId, UpdateChatRequest updateChatRequest, MultipartFile chatImageFile);
+    ChatResponse getChatOverview(String chatId);
+    ChatResponse updateChat(String chatId, UpdateChatRequest updateChatRequest, MultipartFile chatImageFile) throws Exception;
     void deleteChat(String chatId);
     void addParticipantsToChat(String chatId, List<String> userIds);
     void removeParticipantFromChat(String chatId, String targetUserId);
