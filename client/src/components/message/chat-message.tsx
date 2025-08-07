@@ -7,6 +7,11 @@ import MessageEditForm from './message-edit-form'
 import { useState } from 'react'
 import DateDivider from '../home/date-divider'
 import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
+import { Paperclip } from 'lucide-react'
+import { useChatStore } from '@/store/useChatStore'
+import { FaReply } from 'react-icons/fa'
+import { renderSystemMessage } from '@/utils/messageUtils'
+import { useAuthStore } from '@/store/useAuthStore'
 
 interface ChatMessageProps {
   message: Message
@@ -32,6 +37,34 @@ export default function ChatMessage({
   shouldShowDateDivider = false,
 }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const { selectedChat } = useChatStore()
+  const { authUser } = useAuthStore()
+
+  const getReplySenderInfo = () => {
+    if (!message.replyToMessageSenderId || !selectedChat?.participantsInfo) return null
+    return selectedChat.participantsInfo.find((p) => p.id === message.replyToMessageSenderId)
+  }
+
+  const renderReplyContent = () => {
+    if (message.isReplyMessageDeleted) {
+      return <span className="italic text-base-content/50">This message was deleted</span>
+    }
+
+    if (message.replyToMessageType !== MessageType.TEXT) {
+      return (
+        <span className="flex items-center gap-1 text-base-content/60">
+          <Paperclip className="w-4 h-4" />
+          Attachment
+        </span>
+      )
+    }
+
+    // Text message
+    const content = message.replyToMessageContent || ''
+    return content.length > 50 ? `${content.substring(0, 50)}...` : content
+  }
+
+  const replySenderInfo = getReplySenderInfo()
 
   // SYSTEM message
   if (message.messageType === MessageType.SYSTEM) {
@@ -39,7 +72,9 @@ export default function ChatMessage({
       <div className="w-full text-center py-2">
         {shouldShowDateDivider && <DateDivider date={formatDateDivider(message.createdAt)} />}
         <div className="w-full text-center py-2">
-          <span className="text-xs text-base-content/60 italic">{message.content}</span>
+          <span className="text-xs text-base-content/60 italic">
+            {renderSystemMessage(message, selectedChat?.participantsInfo, authUser?.id || '')}
+          </span>
         </div>
       </div>
     )
@@ -48,15 +83,7 @@ export default function ChatMessage({
   return (
     <div className="relative">
       {shouldShowDateDivider && <DateDivider date={formatDateDivider(message.createdAt)} />}
-      {message.isEdited && !message.isDeleted && (
-        <div
-          className={`text-xs italic text-base-content/50 mb-1 px-1 ${
-            isMyMessage ? 'text-right pr-12' : 'text-left pl-12'
-          }`}
-        >
-          (edited)
-        </div>
-      )}
+
       {/* Message container */}
       <div
         className={`flex items-end gap-2 group relative ${
@@ -91,6 +118,56 @@ export default function ChatMessage({
               {senderInfo?.fullName || 'Unknown'}
             </div>
           )}
+
+          {message.isEdited && !message.isDeleted && (
+            <div className={`text-xs italic text-base-content/50 mb-1 px-1`}>(edited)</div>
+          )}
+
+          {/* Reply Preview */}
+          {message.replyToMessageId && (
+            <div className="max-w-full">
+              <div className="flex">
+                <div
+                  className={`flex items-center gap-1 text-xs font-medium text-base-content/70 mb-1 max-w-full overflow-hidden ${
+                    isMyMessage ? 'text-right justify-end' : 'text-left justify-start'
+                  }`}
+                >
+                  <FaReply className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">
+                    {senderInfo?.id === authUser?.id
+                      ? `You replied to ${
+                          replySenderInfo?.id === authUser?.id
+                            ? 'yourself'
+                            : replySenderInfo?.fullName || 'Unknown User'
+                        }`
+                      : senderInfo?.fullName +
+                        ' replied to ' +
+                        (replySenderInfo?.id === authUser?.id
+                          ? 'you'
+                          : replySenderInfo?.fullName || 'Unknown User')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Reply bubble */}
+              <div
+                className={`p-2 rounded-lg bg-base-300 w-fit max-w-full ${
+                  isMyMessage ? 'ml-auto' : 'mr-auto'
+                }`}
+              >
+                {' '}
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    {/* Content */}
+                    <div className="text-xs text-base-content/60 break-words">
+                      {renderReplyContent()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Message bubble and actions container */}
           <div className="relative flex items-center">
             {/* MessageActions for my message (left of bubble) */}

@@ -8,6 +8,7 @@ import { useChatStore } from '@/store/useChatStore'
 import GifPicker from './gif-picker'
 import { HiGif } from 'react-icons/hi2'
 import { FaRegSmile } from 'react-icons/fa'
+import ReplyPreview from '../message/reply-preview'
 
 const TYPING_EVENT_DEBOUNCE_TIME = 3000
 const TYPING_EVENT_THROTTLE_TIME = 3000
@@ -29,7 +30,7 @@ const MessageInput = () => {
   const isTypingRef = useRef<boolean>(false)
 
   const { sendMessage } = useMessageStore()
-  const { selectedChat, sendTypingEvent } = useChatStore()
+  const { selectedChat, sendTypingEvent, replyingToMessage, setReplyingToMessage } = useChatStore()
   const { authUser } = useAuthStore()
 
   const sendTypingEventWithStrategy = () => {
@@ -124,6 +125,7 @@ const MessageInput = () => {
       chatId: selectedChat.id,
       senderId: authUser.id,
       mediaUrl: gifUrl, // Send GIF URL as mediaUrl
+      ...(replyingToMessage && { replyToMessageId: replyingToMessage.id }),
     }
 
     formData.append(
@@ -133,6 +135,7 @@ const MessageInput = () => {
 
     sendMessage(formData)
     setShowGifPicker(false)
+    setReplyingToMessage(null)
   }
 
   const toggleEmojiPicker = () => {
@@ -165,6 +168,7 @@ const MessageInput = () => {
         chatId: selectedChat.id,
         senderId: authUser.id,
         content: text.trim(),
+        ...(replyingToMessage && { replyToMessageId: replyingToMessage.id }),
       }
 
       formData.append(
@@ -181,6 +185,7 @@ const MessageInput = () => {
       const sendMessageRequest = {
         chatId: selectedChat.id,
         senderId: authUser.id,
+        ...(replyingToMessage && { replyToMessageId: replyingToMessage.id }),
       }
 
       mediaFormData.append(
@@ -199,6 +204,7 @@ const MessageInput = () => {
     setText('')
     setMediaPreview(null)
     setShowEmojiPicker(false)
+    setReplyingToMessage(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -233,6 +239,10 @@ const MessageInput = () => {
 
   return (
     <div className="p-4 w-full relative">
+      {/* Reply Preview */}
+      {replyingToMessage && (
+        <ReplyPreview message={replyingToMessage} onCancel={() => setReplyingToMessage(null)} />
+      )}
       {mediaPreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -301,7 +311,7 @@ const MessageInput = () => {
             ref={textInputRef}
             type="text"
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
-            placeholder="Type a message..."
+            placeholder={replyingToMessage ? 'Reply to message...' : 'Type a message...'}
             value={text}
             onChange={handleInputChange}
           />

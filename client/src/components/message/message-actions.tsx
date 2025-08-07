@@ -4,6 +4,8 @@ import { useAuthStore } from '@/store/useAuthStore'
 import type { Message } from '@/types/Message'
 import { MessageType } from '@/types/enum/MessageType'
 import toast from 'react-hot-toast'
+import { useChatStore } from '@/store/useChatStore'
+import { FaReply } from 'react-icons/fa'
 
 interface MessageActionsProps {
   message: Message
@@ -13,10 +15,13 @@ interface MessageActionsProps {
 export default function MessageActions({ message, onEdit }: MessageActionsProps) {
   const { deleteMessage, isDeleting } = useMessageStore()
   const { authUser } = useAuthStore()
+  const { setReplyingToMessage } = useChatStore()
 
   const isMyMessage = message.senderId === authUser?.id
   const canEdit = isMyMessage && message.messageType === MessageType.TEXT && !message.isDeleted
+  const canCopy = message.content && !message.isDeleted && message.messageType === MessageType.TEXT
   const canDelete = isMyMessage && !message.isDeleted
+  const canReply = !message.isDeleted
 
   const handleCopy = async () => {
     if (message.content) {
@@ -31,6 +36,10 @@ export default function MessageActions({ message, onEdit }: MessageActionsProps)
 
   const handleEdit = () => {
     onEdit?.()
+  }
+
+  const handleReply = () => {
+    setReplyingToMessage(message)
   }
 
   const handleDelete = async () => {
@@ -60,12 +69,22 @@ export default function MessageActions({ message, onEdit }: MessageActionsProps)
         tabIndex={0}
         className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
       >
-        <li>
-          <button onClick={handleCopy} className="flex items-center gap-2">
-            <Copy className="w-4 h-4" />
-            Copy message
-          </button>
-        </li>
+        {canReply && (
+          <li>
+            <button onClick={handleReply} className="flex items-center gap-2">
+              <FaReply className="w-4 h-4" />
+              Reply
+            </button>
+          </li>
+        )}
+        {canCopy && (
+          <li>
+            <button onClick={handleCopy} className="flex items-center gap-2">
+              <Copy className="w-4 h-4" />
+              Copy message
+            </button>
+          </li>
+        )}
         {canEdit && (
           <li>
             <button onClick={handleEdit} className="flex items-center gap-2">
