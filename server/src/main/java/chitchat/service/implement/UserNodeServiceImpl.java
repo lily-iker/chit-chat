@@ -386,6 +386,8 @@ public class UserNodeServiceImpl implements UserNodeService {
             totalElements = userNodeRepository.countSearchResultsRegex(currentUserId, query);
         }
 
+        response = userMapper.resolveProfileImageUrls(response);
+
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
         return PageResponse.builder()
@@ -426,11 +428,7 @@ public class UserNodeServiceImpl implements UserNodeService {
         if (!missingIds.isEmpty()) {
             List<User> dbUsers = userRepository.findAllById(missingIds);
             Map<String, UserProfileResponse> dbProfiles = dbUsers.stream()
-                    .map(user -> UserProfileResponse.builder()
-                            .id(user.getId())
-                            .fullName(user.getFullName())
-                            .profileImageUrl(user.getProfileImageUrl())
-                            .build())
+                    .map(userMapper::toUserProfileResponse)
                     .collect(Collectors.toMap(UserProfileResponse::getId, profile -> profile));
 
             // Cache new profiles (with jitter)
