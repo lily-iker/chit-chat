@@ -26,6 +26,7 @@ interface NotificationState {
   handleLastMessageUpdated: (data: any) => void
   handleLastMessageDeleted: (data: any) => void
   handleNewChat: (data: any) => void
+  handleUpdateChat: (data: any) => void
 
   subscribeToNotifications: () => void
   unsubscribeFromNotifications: () => void
@@ -176,7 +177,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     } else {
       // Fetch new chat if it doesn't exist
       try {
-        const res = await axios.get(`/api/v1/chats/${data.chatId}`)
+        const res = await axios.get(`/api/v1/chats/${data.chatId}/overview`)
         const fetchedChat = res.data.result
 
         useChatStore.setState((state) => {
@@ -240,33 +241,87 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       if (alreadyExists) return {}
 
       const newChat = {
-        id: data.id,
-        name: data.name,
-        chatImageUrl: data.chatImageUrl,
-        isGroupChat: data.isGroupChat,
-        lastMessageId: data.lastMessageId,
-        lastMessageContent: data.lastMessageContent,
-        lastMessageSenderId: data.lastMessageSenderId,
-        lastMessageSenderName: data.lastMessageSenderName,
-        lastMessageType: data.lastMessageType,
-        lastMessageMediaUrl: data.lastMessageMediaUrl,
-        lastMessageTime: data.lastMessageTime,
-        isLastMessageDeleted: data.isLastMessageDeleted,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-        createdBy: data.createdBy,
-        participantsInfo: data.participantsInfo,
-        admins: data.admins ?? [],
-        unreadMessageCount: data.unreadMessageCount || 1,
-        typingParticipants: [],
+        ...data,
+        unreadMessageCount: 1,
       }
 
       const updatedChats = [newChat, ...state.chats]
+
       return {
         chats: updatedChats,
         oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
       }
     })
+  },
+
+  handleUpdateChat: async (data: any) => {
+    console.log('[Notification] Chat updated:', data)
+
+    const chatExists = useChatStore.getState().chats.some((chat) => chat.id === data.id)
+
+    if (chatExists) {
+      const currentUserId = useAuthStore.getState().authUser?.id
+
+      useChatStore.setState((state) => {
+        const updatedChats = [...state.chats]
+        const chatIndex = updatedChats.findIndex((chat) => chat.id === data.id)
+
+        if (chatIndex !== -1) {
+          const chat = updatedChats[chatIndex]
+          const isFromOtherUser = data.senderId !== currentUserId
+          const isFromSelectedChat = chat.id === useChatStore.getState().selectedChat?.id
+          const shouldUpdateUnreadCount = isFromOtherUser && !isFromSelectedChat
+
+          const unreadCount = chat.unreadMessageCount || 0
+
+          const updatedChat = {
+            ...chat,
+            name: data.name,
+            chatImageUrl: data.chatImageUrl,
+            updatedAt: data.updatedAt,
+            lastMessageId: data.lastMessageId,
+            lastMessageContent: data.lastMessageContent,
+            lastMessageSenderId: data.lastMessageSenderId,
+            lastMessageSenderName: data.lastMessageSenderName,
+            lastMessageType: data.lastMessageType,
+            lastMessageMediaUrl: data.lastMessageMediaUrl,
+            lastMessageTime: data.lastMessageTime,
+            unreadMessageCount: shouldUpdateUnreadCount
+              ? unreadCount + data.unreadMessageCount
+              : unreadCount,
+          }
+
+          // Move chat to top
+          updatedChats.splice(chatIndex, 1)
+          updatedChats.unshift(updatedChat)
+
+          return {
+            chats: updatedChats,
+            oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
+          }
+        }
+        return {}
+      })
+    } else {
+      // Fetch new chat if it doesn't exist
+      try {
+        const res = await axios.get(`/api/v1/chats/${data.id}/overview`)
+        const fetchedChat = res.data.result
+
+        useChatStore.setState((state) => {
+          const alreadyExists = state.chats.some((chat) => chat.id === fetchedChat.id)
+          if (alreadyExists) return {}
+
+          const updatedChats = [fetchedChat, ...state.chats]
+          return {
+            chats: updatedChats,
+            oldestLoadedChatId: updatedChats[updatedChats.length - 1]?.id || null,
+          }
+        })
+      } catch (error) {
+        console.error('Failed to fetch new chat:', error)
+      }
+    }
   },
 
   subscribeToNotifications: () => {
@@ -308,6 +363,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
         case ChatEvent.NEW_CHAT:
           get().handleNewChat(data)
+          break
+
+        case ChatEvent.CHAT_UPDATED:
+          get().handleUpdateChat(data)
           break
 
         default:

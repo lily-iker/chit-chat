@@ -4,6 +4,7 @@ export const ChatEvent = {
   MESSAGE_DELETED: 'MESSAGE_DELETED',
   CHAT_READ: 'CHAT_READ',
   NEW_CHAT: 'NEW_CHAT',
+  CHAT_UPDATED: 'CHAT_UPDATED',
   USER_TYPING: 'USER_TYPING',
 } as const
 

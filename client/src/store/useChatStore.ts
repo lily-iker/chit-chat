@@ -14,6 +14,8 @@ interface ChatState {
   chats: Chat[]
   isSelectedChatMessagesLoading: boolean
   isChatsLoading: boolean
+  isCreatingChat: boolean
+  isUpdatingChat: boolean
   isLoadingMoreMessages: boolean
   isLoadingMoreChats: boolean
   hasMoreMessages: boolean
@@ -30,10 +32,24 @@ interface ChatState {
   chatSearchPage: number
   chatSearchQuery: string
   chatSearchTotalCount: number
+  replyingToMessage: Message | null
 
   setSelectedChat: (chat: Chat | null) => void
   getChatById: (chatId: string) => Promise<void>
   getChats: () => Promise<void>
+  createChat: (
+    request: {
+      name: string
+      participants: string[]
+      admins: string[]
+    },
+    imageFile?: File | null
+  ) => Promise<void>
+  updateChat: (
+    chatId: string,
+    updateData: { name: string },
+    imageFile?: File | null
+  ) => Promise<void>
   getSelectedChatMessages: (chatId: string) => Promise<void>
   loadMoreMessages: (chatId: string) => Promise<void>
   loadMoreChats: () => Promise<void>
@@ -45,10 +61,11 @@ interface ChatState {
   sendTypingEvent: (chatId: string, userId: string) => void
   addTypingUser: (userId: string) => void
   removeTypingUser: (userId: string) => void
-  updateSelectedChatOrder: (message: Message) => void
+  updateSelectedChatOrder: (message: Message, isDelete: boolean) => void
   searchChats: (query: string, reset?: boolean) => Promise<void>
   loadMoreSearchResults: () => Promise<void>
   clearSearch: () => void
+  setReplyingToMessage: (message: Message | null) => void
 
   subscribe: (chatId: string) => void
   unsubscribe: () => void
@@ -62,6 +79,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   chats: [],
   isSelectedChatMessagesLoading: false,
   isChatsLoading: false,
+  isCreatingChat: false,
+  isUpdatingChat: false,
   isLoadingMoreMessages: false,
   isLoadingMoreChats: false,
   hasMoreMessages: true,
@@ -78,6 +97,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   chatSearchPage: 1,
   chatSearchQuery: '',
   chatSearchTotalCount: 0,
+  replyingToMessage: null,
 
   setSelectedChat: (chat) => {
     // Clear all typing indicators and timeouts when switching chats
@@ -91,6 +111,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       oldestLoadedMessageId: null,
       typingUserIds: [],
       typingTimeouts: {},
+      replyingToMessage: null,
     })
   },
 
@@ -136,6 +157,93 @@ export const useChatStore = create<ChatState>((set, get) => ({
       toast.error('Failed to fetch chats')
     } finally {
       set({ isChatsLoading: false })
+    }
+  },
+
+  createChat: async (request, imageFile) => {
+    try {
+      set({ isCreatingChat: true })
+
+      const formData = new FormData()
+
+      formData.append(
+        'createChatRequest',
+        new Blob([JSON.stringify(request)], { type: 'application/json' })
+      )
+
+      if (imageFile) {
+        formData.append('chatImageFile', imageFile)
+      }
+
+      const res = await axios.post('/api/v1/chats', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      const newChat = res.data.result as Chat
+
+      set((state) => ({
+        chats: [newChat, ...state.chats],
+      }))
+
+      toast.success('Chat created successfully')
+    } catch (error: any) {
+      console.error('Failed to create chat:', error)
+      toast.error(error.response?.data?.message || 'Failed to create chat')
+    } finally {
+      set({ isCreatingChat: false })
+    }
+  },
+
+  updateChat: async (chatId, updateData, imageFile) => {
+    try {
+      set({ isUpdatingChat: true })
+
+      const formData = new FormData()
+
+      // Add updateChatRequest as a JSON blob
+      formData.append(
+        'updateChatRequest',
+        new Blob([JSON.stringify(updateData)], { type: 'application/json' })
+      )
+
+      // Add optional image
+      if (imageFile) {
+        formData.append('chatImageFile', imageFile)
+      }
+
+      const res = await axios.put(`/api/v1/chats/${chatId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      const updatedChat = res.data.result as Chat
+
+      set((state) => {
+        const existingChat = state.chats.find((chat) => chat.id === chatId)
+
+        const mergedChat = {
+          ...existingChat,
+          ...updatedChat,
+          unreadMessageCount: 0,
+        }
+
+        const updatedChats = state.chats.filter((chat) => chat.id !== chatId)
+
+        return {
+          selectedChat: state.selectedChat?.id === chatId ? mergedChat : state.selectedChat,
+          chats: [mergedChat, ...updatedChats],
+        }
+      })
+
+      toast.success('Chat updated successfully')
+    } catch (err) {
+      console.error('Failed to update chat', err)
+      toast.error('Failed to update chat')
+    } finally {
+      set({ isUpdatingChat: false })
     }
   },
 
@@ -254,7 +362,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   updateMessage: (updatedMessage: Message) =>
     set((state) => {
       const updatedMessages = state.selectedChatMessages.map((message) =>
-        message.id === updatedMessage.id ? updatedMessage : message
+        message.id === updatedMessage.id
+          ? { ...updatedMessage, readInfo: message.readInfo }
+          : message
       )
 
       return {
@@ -369,7 +479,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })
   },
 
-  updateSelectedChatOrder: (message: Message) => {
+  updateSelectedChatOrder: (message: Message, isDelete: boolean) => {
     useChatStore.setState((state) => {
       const updatedChats = [...state.chats]
       const chatIndex = updatedChats.findIndex((chat) => chat.id === get().selectedChat?.id)
@@ -385,7 +495,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           lastMessageTime: message.createdAt,
           lastMessageType: message.messageType,
           lastMessageMediaUrl: message.mediaUrl,
-          isLastMessageDeleted: false,
+          isLastMessageDeleted: isDelete ? true : false,
         }
 
         updatedChats.splice(chatIndex, 1)
@@ -465,6 +575,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       chatSearchTotalCount: 0,
     }),
 
+  setReplyingToMessage: (message: Message | null) => {
+    set({ replyingToMessage: message })
+  },
+
   subscribe: (chatId: string) => {
     const { chatSubscription, currentSubscribedChatId } = get()
     const client = useWebSocketStore.getState().client
@@ -495,15 +609,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         case ChatEvent.NEW_MESSAGE:
           get().addMessage(data)
-          get().updateSelectedChatOrder(data)
+          get().updateSelectedChatOrder(data, false)
           break
 
         case ChatEvent.MESSAGE_EDITED:
           get().updateMessage(data)
+          get().updateSelectedChatOrder(data, false)
           break
 
         case ChatEvent.MESSAGE_DELETED:
           get().deleteMessage(data.id)
+          get().updateSelectedChatOrder(data, true)
           break
 
         default:
@@ -549,6 +665,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       oldestLoadedMessageId: null,
       typingUserIds: [],
       typingTimeouts: {},
+      replyingToMessage: null,
     })
   },
 }))

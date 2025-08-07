@@ -9,6 +9,7 @@ import { MessageType } from '@/types/enum/MessageType'
 import ChatTime from './chat-time'
 import CreateChatModal from '../chat/create-chat-modal'
 import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
+import { renderLastSystemMessage } from '@/utils/messageUtils'
 
 const Sidebar = () => {
   const {
@@ -166,13 +167,22 @@ const Sidebar = () => {
     // Regular text message
     if (!chat.lastMessageContent) return null
 
+    const systemMessage = renderLastSystemMessage(
+      chat.lastMessageContent,
+      chat.lastMessageSenderName ?? 'Unknown',
+      authUser?.id ?? ''
+    )
+
+    const systemMessagePreview =
+      systemMessage.length > 33 ? `${systemMessage.slice(0, 30)}...` : systemMessage
+
+    if (chat.lastMessageType === MessageType.SYSTEM) {
+      return <span className="text-accent/90 italic">{systemMessagePreview}</span>
+    }
+
     const combined = sender ? `${sender}: ${chat.lastMessageContent}` : chat.lastMessageContent
 
     const preview = combined.length > 33 ? `${combined.slice(0, 30)}...` : combined
-
-    if (chat.lastMessageType === MessageType.SYSTEM) {
-      return <span className="text-accent/90 italic">{preview}</span>
-    }
 
     return <span className="text-base-content/70">{preview}</span>
   }
@@ -205,7 +215,7 @@ const Sidebar = () => {
             placeholder="Search chats..."
             value={localSearchQuery}
             onChange={(e) => setLocalSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-12 py-2 bg-base-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-10 pr-12 py-2 ring-1 ring-gray-500 bg-base-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {localSearchQuery && (
             <button
