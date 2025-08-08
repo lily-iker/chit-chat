@@ -29,9 +29,9 @@ const MobileNavbar = () => {
         </div>
 
         {/* Friends Tab */}
-        {/* <div className="flex flex-col items-center gap-1 p-2">
+        <div className="flex flex-col items-center gap-1 p-2">
           <FriendButton />
-        </div> */}
+        </div>
       </div>
     </div>
   )
