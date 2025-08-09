@@ -2,7 +2,6 @@ package chitchat.service.implement;
 
 import chitchat.constant.CacheConstant;
 import chitchat.dto.response.PageResponse;
-import chitchat.dto.response.user.UserProfileResponse;
 import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.mapper.UserMapper;
 import chitchat.model.User;
@@ -296,11 +295,11 @@ public class UserNodeServiceImpl implements UserNodeService {
         }
 
         // Search friends by query using MongoDB full-text search
-        List<UserProfileResponse> searchResults = userRepository.searchByFullNameIn(
+        List<UserSearchResponse> searchResults = userRepository.searchByFullNameIn(
                         query.toLowerCase(),
                         new ArrayList<>(allFriendIds)
                 ).stream()
-                .map(userMapper::toUserProfileResponse)
+                .map(user -> userMapper.toUserSearchResponse(user, RelationshipStatus.FRIEND))
                 .collect(Collectors.toList());
 
         // Apply sorting
@@ -318,7 +317,7 @@ public class UserNodeServiceImpl implements UserNodeService {
         int fromIndex = Math.min((pageNumber - 1) * pageSize, total);
         int toIndex = Math.min(fromIndex + pageSize, total);
 
-        List<UserProfileResponse> pageContent = searchResults.subList(fromIndex, toIndex);
+        List<UserSearchResponse> pageContent = searchResults.subList(fromIndex, toIndex);
 
         return PageResponse.builder()
                 .pageNumber(pageNumber)
@@ -411,25 +410,25 @@ public class UserNodeServiceImpl implements UserNodeService {
             cached = new ArrayList<>();
         }
 
-        // Find missing profiles
-        Map<String, UserProfileResponse> results = new HashMap<>();
+        // Find missing users
+        Map<String, UserSearchResponse> results = new HashMap<>();
         List<String> missingIds = new ArrayList<>();
 
         for (int i = 0; i < userIds.size(); i++) {
             if (cached.get(i) != null) {
-                UserProfileResponse profile = objectMapper.convertValue(cached.get(i), UserProfileResponse.class);
+                UserSearchResponse profile = objectMapper.convertValue(cached.get(i), UserSearchResponse.class);
                 results.put(userIds.get(i), profile);
             } else {
                 missingIds.add(userIds.get(i));
             }
         }
 
-        // Load missing profile from DB
+        // Load missing users from DB
         if (!missingIds.isEmpty()) {
             List<User> dbUsers = userRepository.findAllById(missingIds);
-            Map<String, UserProfileResponse> dbProfiles = dbUsers.stream()
-                    .map(userMapper::toUserProfileResponse)
-                    .collect(Collectors.toMap(UserProfileResponse::getId, profile -> profile));
+            Map<String, UserSearchResponse> dbProfiles = dbUsers.stream()
+                    .map(userMapper::toUserSearchResponse)
+                    .collect(Collectors.toMap(UserSearchResponse::getId, profile -> profile));
 
             // Cache new profiles (with jitter)
             dbProfiles.forEach((id, profile) ->
@@ -447,10 +446,10 @@ public class UserNodeServiceImpl implements UserNodeService {
         return userIds.stream()
                 .map(results::get)
                 .filter(Objects::nonNull)
-                .map(profile -> UserSearchResponse.builder()
-                        .id(profile.getId())
-                        .fullName(profile.getFullName())
-                        .profileImageUrl(profile.getProfileImageUrl())
+                .map(user -> UserSearchResponse.builder()
+                        .id(user.getId())
+                        .fullName(user.getFullName())
+                        .profileImageUrl(user.getProfileImageUrl())
                         .relationshipStatus(status)
                         .build()
                 )

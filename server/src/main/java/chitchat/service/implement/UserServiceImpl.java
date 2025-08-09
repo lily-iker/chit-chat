@@ -3,7 +3,7 @@ package chitchat.service.implement;
 import chitchat.constant.CacheConstant;
 import chitchat.dto.request.user.UserInfoRequest;
 import chitchat.dto.response.user.UserInfoResponse;
-import chitchat.dto.response.user.UserProfileResponse;
+import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.mapper.UserMapper;
 import chitchat.model.User;
 import chitchat.model.security.CustomUserDetails;
@@ -77,7 +77,7 @@ public class UserServiceImpl implements UserService {
     @Async
     private void cacheUserProfile(User user) {
         String cacheKey = CacheConstant.PROFILE_KEY_PREFIX + user.getId();
-        UserProfileResponse cacheProfile = userMapper.toUserProfileResponse(user);
+        UserSearchResponse cacheProfile = userMapper.toUserSearchResponse(user);
         redisTemplate.opsForValue().set(cacheKey, cacheProfile);
     }
 }

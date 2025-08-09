@@ -1,9 +1,9 @@
 package chitchat.mapper;
 
 import chitchat.dto.response.user.UserInfoResponse;
-import chitchat.dto.response.user.UserProfileResponse;
 import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.model.User;
+import chitchat.model.enumeration.RelationshipStatus;
 import chitchat.utils.MediaUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -30,11 +30,20 @@ public class UserMapper {
                 .build();
     }
 
-    public UserProfileResponse toUserProfileResponse(User user) {
-        return UserProfileResponse.builder()
+    public UserSearchResponse toUserSearchResponse(User user) {
+        return UserSearchResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .profileImageUrl(mediaUtils.resolveMediaUrl(user.getProfileImageUrl()))
+                .build();
+    }
+
+    public UserSearchResponse toUserSearchResponse(User user, RelationshipStatus status) {
+        return UserSearchResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .profileImageUrl(mediaUtils.resolveMediaUrl(user.getProfileImageUrl()))
+                .relationshipStatus(status)
                 .build();
     }
 
