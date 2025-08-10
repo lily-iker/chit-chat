@@ -290,10 +290,10 @@ const UserProfilePage = () => {
 
           {/* Profile Image */}
           <div
-            onClick={() => userProfile.profileImageUrl && setIsImagePreviewOpen(true)}
-            className={`w-32 h-32 rounded-full overflow-hidden bg-base-300 shadow-md ${
-              userProfile.profileImageUrl ? 'cursor-pointer hover:opacity-80 transition' : ''
-            }`}
+            onClick={() => setIsImagePreviewOpen(true)}
+            className={
+              'w-32 h-32 rounded-full overflow-hidden bg-base-300 shadow-md cursor-pointer hover:opacity-80 transition'
+            }
           >
             <img
               src={userProfile.profileImageUrl || DEFAULT_PROFILE_IMAGE}
@@ -307,7 +307,7 @@ const UserProfilePage = () => {
         <div className="flex justify-center mt-4">{getStatusBadge()}</div>
 
         {/* Image Preview Modal */}
-        {isImagePreviewOpen && userProfile.profileImageUrl && (
+        {isImagePreviewOpen && (
           <div
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
             onClick={() => setIsImagePreviewOpen(false)}
@@ -323,7 +323,7 @@ const UserProfilePage = () => {
                 <X className="w-4 h-4" />
               </button>
               <img
-                src={userProfile.profileImageUrl || '/placeholder.svg'}
+                src={userProfile.profileImageUrl || DEFAULT_PROFILE_IMAGE}
                 alt={`${userProfile.fullName}'s profile`}
                 className="w-full h-auto rounded-lg"
               />
