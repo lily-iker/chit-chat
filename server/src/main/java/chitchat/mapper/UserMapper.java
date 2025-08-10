@@ -1,6 +1,7 @@
 package chitchat.mapper;
 
 import chitchat.dto.response.user.UserInfoResponse;
+import chitchat.dto.response.user.UserProfileResponse;
 import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.model.User;
 import chitchat.model.enumeration.RelationshipStatus;
@@ -27,6 +28,16 @@ public class UserMapper {
                 .emailVerified(user.getEmailVerified())
                 .profileCompleted(user.getProfileCompleted())
                 .role(user.getRole())
+                .build();
+    }
+
+    public UserProfileResponse toUserProfileResponse(User user, RelationshipStatus status) {
+        return UserProfileResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .profileImageUrl(mediaUtils.resolveMediaUrl(user.getProfileImageUrl()))
+                .bio(user.getBio())
+                .status(status)
                 .build();
     }
 

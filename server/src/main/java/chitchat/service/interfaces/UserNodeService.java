@@ -1,6 +1,8 @@
 package chitchat.service.interfaces;
 
 import chitchat.dto.response.PageResponse;
+import chitchat.model.User;
+import chitchat.model.enumeration.RelationshipStatus;
 
 public interface UserNodeService {
     void sendFriendRequest(String targetUserId);
@@ -17,4 +19,7 @@ public interface UserNodeService {
     PageResponse<?> getSentFriendRequests(int pageNumber, int pageSize);
     PageResponse<?> searchFriends(String query, int pageNumber, int pageSize, String sortBy, String sortDirection);
     PageResponse<?> searchUsers(String query, int pageNumber, int pageSize, String sortBy, String sortDirection);
+
+    void updateUserNode(User user);
+    RelationshipStatus getRelationshipBetween(String currentUserId, String targetUserId);
 }

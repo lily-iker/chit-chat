@@ -3,14 +3,17 @@ package chitchat.service.implement;
 import chitchat.constant.CacheConstant;
 import chitchat.dto.request.user.UserInfoRequest;
 import chitchat.dto.response.user.UserInfoResponse;
+import chitchat.dto.response.user.UserProfileResponse;
 import chitchat.dto.response.user.UserSearchResponse;
+import chitchat.exception.ResourceNotFoundException;
 import chitchat.mapper.UserMapper;
 import chitchat.model.User;
+import chitchat.model.enumeration.RelationshipStatus;
 import chitchat.model.security.CustomUserDetails;
-import chitchat.repository.UserNodeRepository;
 import chitchat.repository.UserRepository;
 import chitchat.security.service.CurrentUserService;
 import chitchat.service.MinioService;
+import chitchat.service.interfaces.UserNodeService;
 import chitchat.service.interfaces.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final UserNodeRepository userNodeRepository;
+    private final UserNodeService userNodeService;
     private final CurrentUserService currentUserService;
     private final UserMapper userMapper;
     private final MinioService minioService;
@@ -51,7 +54,7 @@ public class UserServiceImpl implements UserService {
         user.setProfileCompleted(true);
         userRepository.save(user);
 
-        updateUserNode(user);
+        userNodeService.updateUserNode(user);
 
         // Update the cache for the user's profile
         cacheUserProfile(user);
@@ -65,13 +68,22 @@ public class UserServiceImpl implements UserService {
         return userMapper.toUserInfoResponse(userDetails.getUser());
     }
 
-    private void updateUserNode(User user) {
-        userNodeRepository.findByUserId(user.getId()).ifPresent(userNode -> {
-            userNode.setFullName(user.getFullName());
-            userNode.setProfileImageUrl(user.getProfileImageUrl());
-            userNode.setBio(user.getBio());
-            userNodeRepository.save(userNode);
-        });
+    @Override
+    public UserProfileResponse getOtherUserProfile(String targetUserId) {
+
+        CustomUserDetails currentUserDetails = currentUserService.getCurrentUser();
+        String currentUserId = currentUserDetails.getUser().getId();
+
+        if (currentUserId.equals(targetUserId)) {
+            return userMapper.toUserProfileResponse(currentUserDetails.getUser(), null);
+        }
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + targetUserId));
+
+        RelationshipStatus status = userNodeService.getRelationshipBetween(currentUserId, targetUserId);
+
+        return userMapper.toUserProfileResponse(targetUser, status);
     }
 
     @Async

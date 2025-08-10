@@ -364,6 +364,21 @@ public class UserNodeServiceImpl implements UserNodeService {
         return result;
     }
 
+    @Override
+    public void updateUserNode(User user) {
+        userNodeRepository.findByUserId(user.getId()).ifPresent(userNode -> {
+            userNode.setFullName(user.getFullName());
+            userNode.setProfileImageUrl(user.getProfileImageUrl());
+            userNode.setBio(user.getBio());
+            userNodeRepository.save(userNode);
+        });
+    }
+
+    @Override
+    public RelationshipStatus getRelationshipBetween(String currentUserId, String targetUserId) {
+        return userNodeRepository.getRelationshipBetween(currentUserId, targetUserId);
+    }
+
     private PageResponse<?> performSearch(String currentUserId,
                                           String query,
                                           int pageNumber,

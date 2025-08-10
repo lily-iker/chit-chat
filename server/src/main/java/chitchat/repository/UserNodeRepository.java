@@ -3,6 +3,7 @@ package chitchat.repository;
 import chitchat.dto.response.user.UserRelationshipResponse;
 import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.model.UserNode;
+import chitchat.model.enumeration.RelationshipStatus;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
@@ -317,6 +318,27 @@ public interface UserNodeRepository extends Neo4jRepository<UserNode, String> {
             @Param("currentUserId") String currentUserId,
             @Param("searchTerm") String searchTerm
     );
+
+    @Query("""
+        MATCH (a:User {userId: $currentUserId})
+        MATCH (b:User {userId: $targetUserId})
+        WITH a, b
+        OPTIONAL MATCH (a)-[f:FRIEND]-(b)
+        OPTIONAL MATCH (a)-[s:PENDING_REQUEST]->(b)
+        OPTIONAL MATCH (a)<-[r:PENDING_REQUEST]-(b)
+        OPTIONAL MATCH (a)-[b1:BLOCKED]->(b)
+        OPTIONAL MATCH (a)<-[b2:BLOCKED]-(b)
+        RETURN CASE
+            WHEN b1 IS NOT NULL THEN 'BLOCKED'
+            WHEN b2 IS NOT NULL THEN 'BLOCKED_BY'
+            WHEN f IS NOT NULL THEN 'FRIEND'
+            WHEN s IS NOT NULL THEN 'FRIEND_REQUEST_SENT'
+            WHEN r IS NOT NULL THEN 'FRIEND_REQUEST_RECEIVED'
+            ELSE 'NONE'
+        END AS relationship
+    """)
+    RelationshipStatus getRelationshipBetween(@Param("currentUserId") String currentUserId,
+                                              @Param("targetUserId") String targetUserId);
 
     @Query("""
         MATCH (u:User {userId: $userId})

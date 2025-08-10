@@ -37,4 +37,14 @@ public class UserController {
                 )
         );
     }
+
+    @GetMapping("/{targetUserId}")
+    public ResponseEntity<?> getOtherUserProfile(@PathVariable String targetUserId) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "User profile retrieved successfully",
+                        userService.getOtherUserProfile(targetUserId)
+                )
+        );
+    }
 }
