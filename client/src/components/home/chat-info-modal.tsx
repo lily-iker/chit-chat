@@ -3,7 +3,7 @@ import {
   Users,
   Calendar,
   Crown,
-  MessageCircle,
+  MessageSquareText,
   UserPlus,
   UserMinus,
   LogOut,
@@ -69,6 +69,17 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
 
   const getCreatorInfo = () => {
     return chat.participantsInfo?.find((p) => p.id === chat.createdBy)
+  }
+
+  const handleImageClick = () => {
+    if (isGroupChat) {
+      setIsPreviewOpen(true)
+    } else {
+      const otherParticipant = chat.participantsInfo?.find((p) => p.id !== authUser?.id)
+      if (otherParticipant) {
+        navigate(`/user/${otherParticipant.id}`)
+      }
+    }
   }
 
   const creatorInfo = getCreatorInfo()
@@ -167,7 +178,11 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
           {/* Modal header */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-lg flex items-center gap-2">
-              {isGroupChat ? <Users className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+              {isGroupChat ? (
+                <Users className="w-5 h-5" />
+              ) : (
+                <MessageSquareText className="w-5 h-5" />
+              )}
               {isGroupChat ? 'Group Info' : 'Chat Info'}
             </h3>
             <button className="btn btn-sm btn-circle btn-ghost" onClick={onClose}>
@@ -182,7 +197,7 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
               <div className="relative">
                 <div
                   className="w-24 h-24 rounded-full overflow-hidden bg-base-300 shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => setIsPreviewOpen(true)}
+                  onClick={handleImageClick}
                 >
                   <img
                     src={currentDisplayImage || '/placeholder.svg'}

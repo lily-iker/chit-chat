@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router'
 import { UserPlus, UserX, Check, X, Shield, ShieldOff } from 'lucide-react'
 import { RelationshipStatus } from '@/types/enum/RelationshipStatus'
 import type { UserSearchResponse } from '@/types/response/UserSearchResponse'
@@ -11,6 +12,8 @@ interface UserCardProps {
 }
 
 const UserCard = React.memo(({ user, showActions = true }: UserCardProps) => {
+  const navigate = useNavigate()
+
   const {
     sendFriendRequest,
     cancelFriendRequest,
@@ -133,25 +136,33 @@ const UserCard = React.memo(({ user, showActions = true }: UserCardProps) => {
     }
   }
 
+  const handleNavigate = () => {
+    navigate(`/user/${user.id}`)
+  }
+
   return (
     <div className="card bg-base-100 shadow-sm border border-base-300">
       <div className="card-body p-4">
         <div className="flex items-center gap-3">
-          {/* Avatar */}
-          <div className="avatar">
-            <div className="w-12 h-12 rounded-full">
-              <img
-                src={user.profileImageUrl || DEFAULT_PROFILE_IMAGE}
-                alt={user.fullName}
-                className="w-full h-full object-cover"
-              />
+          {/* Avatar + Name clickable */}
+          <div
+            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer hover:opacity-80 transition"
+            onClick={handleNavigate}
+          >
+            <div className="avatar">
+              <div className="w-12 h-12 rounded-full">
+                <img
+                  src={user.profileImageUrl || DEFAULT_PROFILE_IMAGE}
+                  alt={user.fullName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* User info */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{user.fullName}</h3>
-            {getStatusBadge()}
+            <div>
+              <h3 className="font-semibold truncate">{user.fullName}</h3>
+              {getStatusBadge()}
+            </div>
           </div>
 
           {/* Actions */}

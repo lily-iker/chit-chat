@@ -14,6 +14,8 @@ interface RelationshipCounts {
 }
 
 interface RelationshipState {
+  userProfile: UserProfileResponse | null
+  userProfileLoading: boolean
   // Counts
   counts: RelationshipCounts
   countsLoading: boolean
@@ -50,7 +52,7 @@ interface RelationshipState {
   searchPage: number
   searchQuery: string
 
-  friendSearchResults: UserProfileResponse[]
+  friendSearchResults: UserSearchResponse[]
   friendCount: number
   friendSearchLoading: boolean
   friendSearchHasMore: boolean
@@ -58,6 +60,7 @@ interface RelationshipState {
   friendSearchQuery: string
 
   // Actions
+  fetchUserProfile: (userId: string) => Promise<void>
   getRelationshipCounts: () => Promise<void>
   getFriends: (reset?: boolean) => Promise<void>
   getIncomingRequests: (reset?: boolean) => Promise<void>
@@ -77,6 +80,7 @@ interface RelationshipState {
 
   // Utility
   updateUserStatus: (userId: string, newStatus: RelationshipStatus) => void
+  updateUserProfileStatus: (userId: string, newStatus: RelationshipStatus) => void
   removeUserFromLists: (userId: string) => void
   updateCounts: (
     action:
@@ -94,6 +98,9 @@ interface RelationshipState {
 
 export const useRelationshipStore = create<RelationshipState>((set, get) => ({
   // Initial state
+  userProfile: null,
+  userProfileLoading: false,
+
   counts: {
     friendsCount: 0,
     incomingRequestsCount: 0,
@@ -136,15 +143,31 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
   friendSearchPage: 1,
   friendSearchQuery: '',
 
+  fetchUserProfile: async (userId: string) => {
+    set({ userProfileLoading: true })
+    try {
+      const response = await axios.get(`/api/v1/users/${userId}`)
+      const userProfile: UserProfileResponse = response.data.result
+      set({ userProfile })
+    } catch (error: any) {
+      console.error('Failed to fetch user profile:', error)
+    } finally {
+      set({
+        userProfileLoading: false,
+      })
+    }
+  },
+
   // Get friend counts
   getRelationshipCounts: async () => {
     set({ countsLoading: true })
     try {
       const response = await axios.get('/api/v1/user-nodes/counts')
       const counts: RelationshipCounts = response.data.result
-      set({ counts, countsLoading: false })
+      set({ counts })
     } catch (error) {
       console.error('Failed to fetch friend counts:', error)
+    } finally {
       set({ countsLoading: false })
     }
   },
@@ -171,6 +194,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch friends:', error)
       toast.error('Failed to load friends')
+    } finally {
       set({ friendsLoading: false })
     }
   },
@@ -199,6 +223,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch incoming requests:', error)
       toast.error('Failed to load incoming requests')
+    } finally {
       set({ incomingLoading: false })
     }
   },
@@ -227,6 +252,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch sent requests:', error)
       toast.error('Failed to load sent requests')
+    } finally {
       set({ sentLoading: false })
     }
   },
@@ -253,6 +279,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch blocked users:', error)
       toast.error('Failed to load blocked users')
+    } finally {
       set({ blockedLoading: false })
     }
   },
@@ -296,6 +323,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     } catch (error) {
       console.error('Failed to search users:', error)
       toast.error('Failed to search users')
+    } finally {
       set({ searchLoading: false })
     }
   },
@@ -336,6 +364,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     } catch (error) {
       console.error('Failed to search friends:', error)
       toast.error('Failed to search friends')
+    } finally {
       set({ friendSearchLoading: false })
     }
   },
@@ -345,6 +374,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     try {
       await axios.post(`/api/v1/user-nodes/friend-request/send/${userId}`)
       get().updateUserStatus(userId, RelationshipStatus.FRIEND_REQUEST_SENT)
+      get().updateUserProfileStatus(userId, RelationshipStatus.FRIEND_REQUEST_SENT)
       get().updateCounts('sendRequest', userId)
       toast.success('Friend request sent')
     } catch (error) {
@@ -357,6 +387,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     try {
       await axios.post(`/api/v1/user-nodes/friend-request/cancel/${userId}`)
       get().updateUserStatus(userId, RelationshipStatus.NONE)
+      get().updateUserProfileStatus(userId, RelationshipStatus.NONE)
       get().removeUserFromLists(userId)
       get().updateCounts('cancelRequest', userId)
       toast.success('Friend request cancelled')
@@ -370,6 +401,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     try {
       await axios.post(`/api/v1/user-nodes/friend-request/accept/${userId}`)
       get().updateUserStatus(userId, RelationshipStatus.FRIEND)
+      get().updateUserProfileStatus(userId, RelationshipStatus.FRIEND)
       get().removeUserFromLists(userId)
       get().updateCounts('acceptRequest', userId)
       toast.success('Friend request accepted')
@@ -383,6 +415,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     try {
       await axios.post(`/api/v1/user-nodes/friend-request/reject/${userId}`)
       get().updateUserStatus(userId, RelationshipStatus.NONE)
+      get().updateUserProfileStatus(userId, RelationshipStatus.NONE)
       get().removeUserFromLists(userId)
       get().updateCounts('rejectRequest', userId)
       toast.success('Friend request rejected')
@@ -396,6 +429,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     try {
       await axios.delete(`/api/v1/user-nodes/friends/${userId}`)
       get().updateUserStatus(userId, RelationshipStatus.NONE)
+      get().updateUserProfileStatus(userId, RelationshipStatus.NONE)
       get().removeUserFromLists(userId)
       get().updateCounts('removeFriend', userId)
       toast.success('Friend removed')
@@ -409,6 +443,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     try {
       await axios.post(`/api/v1/user-nodes/block/${userId}`)
       get().updateUserStatus(userId, RelationshipStatus.BLOCKED)
+      get().updateUserProfileStatus(userId, RelationshipStatus.BLOCKED)
       get().removeUserFromLists(userId)
       get().updateCounts('blockUser', userId)
       toast.success('User blocked')
@@ -422,6 +457,7 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
     try {
       await axios.post(`/api/v1/user-nodes/unblock/${userId}`)
       get().updateUserStatus(userId, RelationshipStatus.NONE)
+      get().updateUserProfileStatus(userId, RelationshipStatus.NONE)
       get().removeUserFromLists(userId)
       get().updateCounts('unblockUser', userId)
       toast.success('User unblocked')
@@ -437,6 +473,15 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
       searchResults: state.searchResults.map((user) =>
         user.id === userId ? { ...user, relationshipStatus: newStatus } : user
       ),
+    }))
+  },
+
+  updateUserProfileStatus: (userId: string, newStatus: RelationshipStatus) => {
+    set((state) => ({
+      userProfile:
+        state.userProfile && state.userProfile.id === userId
+          ? { ...state.userProfile, status: newStatus }
+          : state.userProfile,
     }))
   },
 
@@ -502,6 +547,9 @@ export const useRelationshipStore = create<RelationshipState>((set, get) => ({
 
   cleanup: () => {
     set({
+      userProfile: null,
+      userProfileLoading: false,
+
       counts: {
         friendsCount: 0,
         incomingRequestsCount: 0,

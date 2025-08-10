@@ -21,7 +21,7 @@ const UserProfile = () => {
         <div className="space-y-1">
           {/* Update Profile */}
           <Link
-            to="/update-profile"
+            to="/profile"
             className={`
               w-full px-4 py-3 rounded-xl flex items-center gap-2 transition-colors
               hover:bg-base-content/5
