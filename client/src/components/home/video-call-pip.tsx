@@ -1,7 +1,3 @@
-'use client'
-
-import type React from 'react'
-
 import { useEffect, useRef, useState } from 'react'
 import { X, Maximize2 } from 'lucide-react'
 import { useVideoCallStore } from '@/store/useVideoCall'

@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useRef } from 'react'
 import { X, Minimize2 } from 'lucide-react'
 import { useVideoCallStore } from '@/store/useVideoCall'
