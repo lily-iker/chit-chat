@@ -12,6 +12,8 @@ import chitchat.model.Chat;
 import chitchat.model.Message;
 import chitchat.model.enumeration.ChatEvent;
 import chitchat.model.enumeration.MessageType;
+import chitchat.model.enumeration.SystemMessageAction;
+import chitchat.model.message.SystemMessage;
 import chitchat.model.security.CustomUserDetails;
 import chitchat.repository.ChatRepository;
 import chitchat.repository.MessageRepository;
@@ -20,6 +22,7 @@ import chitchat.service.MinioService;
 import chitchat.service.interfaces.ChatService;
 import chitchat.service.interfaces.MessageService;
 import chitchat.service.interfaces.NotificationService;
+import chitchat.utils.SystemMessageUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -29,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +46,7 @@ public class MessageServiceImpl implements MessageService {
     private final MessageMapper messageMapper;
     private final NotificationService notificationService;
     private final MinioService minioService;
+    private final SystemMessageUtils systemMessageUtils;
 
     @Override
     @Transactional
@@ -92,6 +97,92 @@ public class MessageServiceImpl implements MessageService {
         else {
             message.setMessageType(MessageType.TEXT);
         }
+        messageRepository.save(message);
+
+        MessageResponse messageResponse = messageMapper.toMessageResponse(message);
+        messageResponse.setSenderName(currentUser.getUser().getFullName());
+
+        WebSocketResponse<MessageResponse> webSocketResponse =
+                new WebSocketResponse<>(ChatEvent.NEW_MESSAGE, messageResponse);
+
+        messagingTemplate.convertAndSend(
+                WebSocketDestination.CHAT_TOPIC_PREFIX + sendMessageRequest.getChatId(),
+                webSocketResponse
+        );
+
+        chatService.updateChatLastMessage(chat, message, currentUser.getUser());
+
+        // Send notification to all participants
+        for (String participantId : chat.getParticipants()) {
+            if (!participantId.equals(currentUserId)) {
+                notificationService.sendNotification(
+                        WebSocketDestination.USER_NOTIFICATION_PREFIX + participantId,
+                        webSocketResponse
+                );
+            }
+        }
+
+        return messageResponse;
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse sendVideoCallSystemMessage(SendMessageRequest sendMessageRequest,
+                                                      SystemMessageAction action) throws Exception {
+
+        Chat chat = chatRepository.findById(sendMessageRequest.getChatId())
+                .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
+
+        CustomUserDetails currentUser = currentUserService.getCurrentUser();
+        String currentUserId = currentUser.getUser().getId();
+
+        if (!chat.getParticipants().contains(currentUserId)) {
+            throw new NoPermissionException("You are not a participant of this chat");
+        }
+
+        Message message = Message.builder()
+                .chatId(sendMessageRequest.getChatId())
+                .senderId(currentUserId)
+                .messageType(MessageType.SYSTEM)
+                .build();
+
+        switch (action) {
+            case VIDEO_CALL_START:
+                SystemMessage startMessage = SystemMessage.builder()
+                        .actorId(currentUserId)
+                        .action(SystemMessageAction.VIDEO_CALL_START)
+                        .metadata(Map.of("videoCallStart", "true"))
+                        .build();
+                message.setContent(systemMessageUtils.convertToJson(startMessage));
+                break;
+            case VIDEO_CALL_JOIN:
+                SystemMessage joinMessage = SystemMessage.builder()
+                        .actorId(currentUserId)
+                        .action(SystemMessageAction.VIDEO_CALL_JOIN)
+                        .metadata(Map.of("videoCallJoin", "true"))
+                        .build();
+                message.setContent(systemMessageUtils.convertToJson(joinMessage));
+                break;
+            case VIDEO_CALL_LEAVE:
+                SystemMessage leaveMessage = SystemMessage.builder()
+                        .actorId(currentUserId)
+                        .action(SystemMessageAction.VIDEO_CALL_LEAVE)
+                        .metadata(Map.of("videoCallLeave", "true"))
+                        .build();
+                message.setContent(systemMessageUtils.convertToJson(leaveMessage));
+                break;
+            case VIDEO_CALL_END:
+                SystemMessage endMessage = SystemMessage.builder()
+                        .actorId(currentUserId)
+                        .action(SystemMessageAction.VIDEO_CALL_END)
+                        .metadata(Map.of("videoCallEnd", "true"))
+                        .build();
+                message.setContent(systemMessageUtils.convertToJson(endMessage));
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid system message action for video call");
+        }
+
         messageRepository.save(message);
 
         MessageResponse messageResponse = messageMapper.toMessageResponse(message);
