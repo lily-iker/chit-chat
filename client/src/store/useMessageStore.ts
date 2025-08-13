@@ -1,12 +1,15 @@
 import { create } from 'zustand'
 import axios from '@/lib/axios-custom'
 import toast from 'react-hot-toast'
+import type { SystemMessageAction } from '@/types/enum/SystemMessageAction'
+import { useVideoCallStore } from './useVideoCall'
 
 type MessageState = {
   isLoading: boolean
   isDeleting: boolean
   isUpdating: boolean
   sendMessage: (formdata: FormData) => Promise<void>
+  sendVideoCallSystemMessage: (action: SystemMessageAction, chatId?: string) => Promise<void>
   updateMessage: (messageId: string, newContent: string) => Promise<void>
   deleteMessage: (messageId: string) => Promise<void>
   cleanup: () => void
@@ -26,6 +29,26 @@ export const useMessageStore = create<MessageState>((set) => ({
       toast.error('Failed to send message')
     } finally {
       set({ isLoading: false })
+    }
+  },
+
+  sendVideoCallSystemMessage: async (action: SystemMessageAction, chatId?: string) => {
+    try {
+      const targetChatId = chatId || useVideoCallStore.getState().currentChatId
+      if (!targetChatId) {
+        console.error('No chat ID available for video call system message')
+        return
+      }
+
+      await axios.post(
+        `/api/v1/messages/video-call`,
+        { chatId: targetChatId },
+        { params: { action } }
+      )
+
+      console.log(`Video call ${action} system message sent for chat:`, targetChatId)
+    } catch (error) {
+      console.error(`Failed to send video call ${action} system message:`, error)
     }
   },
 

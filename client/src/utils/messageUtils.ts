@@ -21,6 +21,14 @@ export const renderLastSystemMessage = (
         return `${actorName} updated the chat name to "${parsedContent.metadata.newGroupChatName}"`
       case SystemMessageAction.UPDATE_GROUP_CHAT_IMAGE:
         return `${actorName} updated the chat image`
+      case SystemMessageAction.VIDEO_CALL_START:
+        return `${actorName} started a video call`
+      case SystemMessageAction.VIDEO_CALL_JOIN:
+        return `${actorName} joined the video call`
+      case SystemMessageAction.VIDEO_CALL_LEAVE:
+        return `${actorName} left the video call`
+      case SystemMessageAction.VIDEO_CALL_END:
+        return `Video call ended`
       default:
         return `${actorName} performed an action`
     }
@@ -53,6 +61,14 @@ export const renderSystemMessage = (
         return `${actorName} updated the chat name to "${parsedContent.metadata.newGroupChatName}"`
       case SystemMessageAction.UPDATE_GROUP_CHAT_IMAGE:
         return `${actorName} updated the chat image`
+      case SystemMessageAction.VIDEO_CALL_START:
+        return `${actorName} started a video call`
+      case SystemMessageAction.VIDEO_CALL_JOIN:
+        return `${actorName} joined the video call`
+      case SystemMessageAction.VIDEO_CALL_LEAVE:
+        return `${actorName} left the video call`
+      case SystemMessageAction.VIDEO_CALL_END:
+        return `Video call ended`
       default:
         return `${actorName} performed an action`
     }

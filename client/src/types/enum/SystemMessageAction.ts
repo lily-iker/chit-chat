@@ -3,6 +3,10 @@ export const SystemMessageAction = {
   CREATE_GROUP_CHAT: 'CREATE_GROUP_CHAT',
   UPDATE_GROUP_CHAT_NAME: 'UPDATE_GROUP_CHAT_NAME',
   UPDATE_GROUP_CHAT_IMAGE: 'UPDATE_GROUP_CHAT_IMAGE',
+  VIDEO_CALL_START: 'VIDEO_CALL_START',
+  VIDEO_CALL_JOIN: 'VIDEO_CALL_JOIN',
+  VIDEO_CALL_LEAVE: 'VIDEO_CALL_LEAVE',
+  VIDEO_CALL_END: 'VIDEO_CALL_END',
 } as const
 
 export type SystemMessageAction = (typeof SystemMessageAction)[keyof typeof SystemMessageAction]
