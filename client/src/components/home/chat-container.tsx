@@ -7,7 +7,7 @@ import { MessageType } from '@/types/enum/MessageType'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import TypingIndicator from './typing-indicator'
 import { isSameDay } from '@/utils/timeUtils'
-import ChatMessagesSkeleton from './skeleton/chat-messages-skeleton'
+import ChatMessagesSkeleton from '../message/skeleton/chat-messages-skeleton'
 import ChatMessage from '../message/chat-message'
 
 const ChatContainer = () => {
