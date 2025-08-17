@@ -66,7 +66,7 @@ const ChatHeader = () => {
             </button>
             {/* Avatar */}
             <div
-              className="flex items-center gap-3 hover:cursor-pointer hover:bg-base-200 p-2 rounded-lg transition-colors"
+              className="flex items-center gap-3 hover:cursor-pointer hover:bg-base-200 px-4 py-2 rounded-lg transition-colors"
               onClick={handleShowChatInfo}
             >
               <div className="avatar">
