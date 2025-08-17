@@ -4,8 +4,8 @@ import { useRelationshipStore } from '@/store/useRelationshipStore'
 import { useChatStore } from '@/store/useChatStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import toast from 'react-hot-toast'
-import type { UserProfileResponse } from '@/types/response/UserProfileResponse'
 import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
+import type { UserSearchResponse } from '@/types/response/UserSearchResponse'
 
 interface CreateChatModalProps {
   isOpen: boolean
@@ -15,7 +15,7 @@ interface CreateChatModalProps {
 const CreateChatModal = ({ isOpen, onClose }: CreateChatModalProps) => {
   const [query, setQuery] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [selectedParticipants, setSelectedParticipants] = useState<UserProfileResponse[]>([])
+  const [selectedParticipants, setSelectedParticipants] = useState<UserSearchResponse[]>([])
   const [chatName, setChatName] = useState('')
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
@@ -134,7 +134,7 @@ const CreateChatModal = ({ isOpen, onClose }: CreateChatModalProps) => {
     if (isNearBottom) handleLoadMore()
   }
 
-  const handleParticipantToggle = (user: UserProfileResponse) => {
+  const handleParticipantToggle = (user: UserSearchResponse) => {
     setSelectedParticipants((prev) => {
       const isSelected = prev.some((p) => p.id === user.id)
       return isSelected ? prev.filter((p) => p.id !== user.id) : [...prev, user]
