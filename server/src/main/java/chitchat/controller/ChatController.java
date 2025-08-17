@@ -14,6 +14,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/chats")
@@ -70,7 +72,52 @@ public class ChatController {
         chatService.deleteChat(chatId);
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
-                        "Chat deleted successfully")
+                        "Chat deleted successfully"
+                )
+        );
+    }
+
+    @PostMapping("/{chatId}/add-participants")
+    public ResponseEntity<?> addParticipantsToChat(@PathVariable String chatId,
+                                                   @RequestBody List<String> userIds) {
+        chatService.addParticipantsToChat(chatId, userIds);
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Participants added to chat successfully"
+                )
+        );
+    }
+
+    @DeleteMapping("/{chatId}/participants/{targetUserId}")
+    public ResponseEntity<?> removeParticipantFromChat(@PathVariable String chatId,
+                                                       @PathVariable String targetUserId) {
+        chatService.removeParticipantFromChat(chatId, targetUserId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Participant removed successfully"
+                )
+        );
+    }
+
+    @PutMapping("/{chatId}/participants/{targetUserId}/promote")
+    public ResponseEntity<?> promoteParticipantToAdmin(@PathVariable String chatId,
+                                                       @PathVariable String targetUserId) {
+        chatService.promoteParticipantToAdmin(chatId, targetUserId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Participant promoted to admin successfully"
+                )
+        );
+    }
+
+    @PutMapping("/{chatId}/participants/{targetUserId}/demote")
+    public ResponseEntity<?> demoteAdminToParticipant(@PathVariable String chatId,
+                                                      @PathVariable String targetUserId) {
+        chatService.demoteAdminToParticipant(chatId, targetUserId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(200,
+                        "Admin demoted to participant successfully"
+                )
         );
     }
 
