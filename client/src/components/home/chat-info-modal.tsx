@@ -10,6 +10,9 @@ import {
   Camera,
   Save,
   Trash2,
+  ChevronUp,
+  ChevronDown,
+  MoreVertical,
 } from 'lucide-react'
 import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -20,6 +23,7 @@ import { useRef, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { TbCancel } from 'react-icons/tb'
 import { useChatStore } from '@/store/useChatStore'
+import AddParticipantModal from './add-participant-modal'
 
 interface ChatInfoModalProps {
   isOpen: boolean
@@ -29,7 +33,18 @@ interface ChatInfoModalProps {
 
 export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalProps) {
   const { authUser } = useAuthStore()
-  const { updateChat, isUpdatingChat } = useChatStore()
+  const {
+    updateChat,
+    isUpdatingChat,
+    removeParticipantFromChat,
+    promoteParticipantToAdmin,
+    demoteAdminToParticipant,
+    // leaveChat,
+    // deleteChat,
+    isManagingParticipants,
+    setSelectedChat,
+    unsubscribe,
+  } = useChatStore()
 
   const navigate = useNavigate()
 
@@ -38,6 +53,12 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('')
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [showAddParticipantModal, setShowAddParticipantModal] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState<{
+    type: 'remove' | 'promote' | 'demote' | 'leave' | 'delete'
+    targetUserId?: string
+    targetUserName?: string
+  } | null>(null)
 
   const isCurrentUserAdmin = chat.admins?.includes(authUser?.id || '')
   const isGroupChat = chat.isGroupChat
@@ -94,12 +115,6 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
       return
     }
 
-    // Validate file size (max 5MB)
-    // if (file.size > 5 * 1024 * 1024) {
-    //   toast.error('Image size should be less than 5MB')
-    //   return
-    // }
-
     // Clean up previous preview URL
     if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
       URL.revokeObjectURL(previewImageUrl)
@@ -144,19 +159,102 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
   }
 
   const handleAddParticipant = () => {
-    console.log('Add participant')
+    setShowAddParticipantModal(true)
   }
 
-  const handleRemoveParticipant = (participantId: string) => {
-    console.log('Remove participant:', participantId)
+  const handleRemoveParticipant = async (participantId: string) => {
+    if (showConfirmDialog?.type === 'remove' && showConfirmDialog.targetUserId === participantId) {
+      await removeParticipantFromChat(chat.id, participantId)
+      setShowConfirmDialog(null)
+    } else {
+      const participant = chat.participantsInfo?.find((p) => p.id === participantId)
+      setShowConfirmDialog({
+        type: 'remove',
+        targetUserId: participantId,
+        targetUserName: participant?.fullName || 'Unknown User',
+      })
+    }
   }
 
-  const handleLeaveGroup = () => {
-    console.log('Leave group')
+  const handlePromoteParticipant = async (participantId: string) => {
+    if (showConfirmDialog?.type === 'promote' && showConfirmDialog.targetUserId === participantId) {
+      await promoteParticipantToAdmin(chat.id, participantId)
+      setShowConfirmDialog(null)
+    } else {
+      const participant = chat.participantsInfo?.find((p) => p.id === participantId)
+      setShowConfirmDialog({
+        type: 'promote',
+        targetUserId: participantId,
+        targetUserName: participant?.fullName || 'Unknown User',
+      })
+    }
   }
 
-  const handleDeleteChat = () => {
-    console.log('Delete chat')
+  const handleDemoteAdmin = async (participantId: string) => {
+    if (showConfirmDialog?.type === 'demote' && showConfirmDialog.targetUserId === participantId) {
+      await demoteAdminToParticipant(chat.id, participantId)
+      setShowConfirmDialog(null)
+    } else {
+      const participant = chat.participantsInfo?.find((p) => p.id === participantId)
+      setShowConfirmDialog({
+        type: 'demote',
+        targetUserId: participantId,
+        targetUserName: participant?.fullName || 'Unknown User',
+      })
+    }
+  }
+
+  const handleLeaveGroup = async () => {
+    if (showConfirmDialog?.type === 'leave') {
+      // await leaveChat(chat.id)
+      setShowConfirmDialog(null)
+      unsubscribe()
+      setSelectedChat(null)
+      onClose()
+    } else {
+      setShowConfirmDialog({ type: 'leave' })
+    }
+  }
+
+  const handleDeleteChat = async () => {
+    if (showConfirmDialog?.type === 'delete') {
+      // await deleteChat(chat.id)
+      setShowConfirmDialog(null)
+      unsubscribe()
+      setSelectedChat(null)
+      onClose()
+    } else {
+      setShowConfirmDialog({ type: 'delete' })
+    }
+  }
+
+  const canRemoveParticipant = (participantId: string) => {
+    if (!isCurrentUserAdmin) return false
+    if (participantId === authUser?.id) return false
+
+    // Check if removing this admin would leave no admins
+    const isTargetAdmin = chat.admins?.includes(participantId)
+    const adminCount = chat.admins?.length || 0
+
+    if (isTargetAdmin && adminCount <= 1) return false
+
+    return true
+  }
+
+  const canPromoteParticipant = (participantId: string) => {
+    return (
+      isCurrentUserAdmin && participantId !== authUser?.id && !chat.admins?.includes(participantId)
+    )
+  }
+
+  const canDemoteAdmin = (participantId: string) => {
+    if (!isCurrentUserAdmin) return false
+    if (participantId === authUser?.id) return false
+    if (!chat.admins?.includes(participantId)) return false
+
+    // Don't allow demoting if it would leave no admins
+    const adminCount = chat.admins?.length || 0
+    return adminCount > 1
   }
 
   if (!isOpen) return null
@@ -217,11 +315,6 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
                     <Camera className="w-4 h-4" />
                   </button>
                 )}
-
-                {/* Change indicator */}
-                {/* {selectedImageFile && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full border-2 border-base-100"></div>
-                )} */}
               </div>
 
               {/* Chat name input */}
@@ -247,12 +340,6 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
                 ) : (
                   <h2 className="text-xl font-semibold">{chat.name}</h2>
                 )}
-
-                {/* {isGroupChat && (
-                  <p className="text-sm text-base-content/70">
-                    {participantCount} {participantCount === 1 ? 'participant' : 'participants'}
-                  </p>
-                )} */}
               </div>
 
               {/* Update/Discard buttons - only show when there are changes */}
@@ -347,10 +434,12 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
                         return (
                           <div
                             key={participant.id}
-                            className="flex items-center justify-between p-2 rounded-lg hover:bg-base-200 transition-colors cursor-pointer"
-                            onClick={() => navigate(`/user/${participant.id}`)}
+                            className="flex items-center justify-between p-2 rounded-lg hover:bg-base-200 transition-colors"
                           >
-                            <div className="flex items-center gap-3">
+                            <div
+                              className="flex items-center gap-3 flex-1 cursor-pointer"
+                              onClick={() => navigate(`/user/${participant.id}`)}
+                            >
                               <div className="avatar">
                                 <div className="w-8 h-8 rounded-full">
                                   <img
@@ -377,16 +466,52 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
 
                             {/* Participant Actions */}
                             {isCurrentUserAdmin && !isCurrentUser && (
-                              <button
-                                className="btn btn-ghost btn-sm text-error hover:bg-error/10"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleRemoveParticipant(participant.id)
-                                }}
-                                title="Remove participant"
-                              >
-                                <UserMinus className="w-4 h-4" />
-                              </button>
+                              <div className="dropdown dropdown-left dropdown-center">
+                                <div tabIndex={0} role="button" className="btn btn-ghost btn-sm">
+                                  <MoreVertical className="w-4 h-4" />
+                                </div>
+                                <ul
+                                  tabIndex={0}
+                                  className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+                                >
+                                  {!isAdmin && canPromoteParticipant(participant.id) && (
+                                    <li>
+                                      <button
+                                        onClick={() => handlePromoteParticipant(participant.id)}
+                                        disabled={isManagingParticipants}
+                                        className="text-success"
+                                      >
+                                        <ChevronUp className="w-4 h-4" />
+                                        Promote to Admin
+                                      </button>
+                                    </li>
+                                  )}
+                                  {isAdmin && canDemoteAdmin(participant.id) && (
+                                    <li>
+                                      <button
+                                        onClick={() => handleDemoteAdmin(participant.id)}
+                                        disabled={isManagingParticipants}
+                                        className="text-warning"
+                                      >
+                                        <ChevronDown className="w-4 h-4" />
+                                        Demote to Member
+                                      </button>
+                                    </li>
+                                  )}
+                                  {canRemoveParticipant(participant.id) && (
+                                    <li>
+                                      <button
+                                        onClick={() => handleRemoveParticipant(participant.id)}
+                                        disabled={isManagingParticipants}
+                                        className="text-error"
+                                      >
+                                        <UserMinus className="w-4 h-4" />
+                                        Remove from Group
+                                      </button>
+                                    </li>
+                                  )}
+                                </ul>
+                              </div>
                             )}
                           </div>
                         )
@@ -400,14 +525,22 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
             <div className="divider"></div>
             <div className="space-y-2">
               {isGroupChat && (
-                <button className="btn w-full justify-start text-error" onClick={handleLeaveGroup}>
+                <button
+                  className="btn w-full justify-start text-error"
+                  onClick={handleLeaveGroup}
+                  disabled={isManagingParticipants}
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Leave Group
                 </button>
               )}
 
               {(isCurrentUserAdmin || !isGroupChat) && (
-                <button className="btn btn-error w-full justify-start" onClick={handleDeleteChat}>
+                <button
+                  className="btn btn-error w-full justify-start"
+                  onClick={handleDeleteChat}
+                  disabled={isManagingParticipants}
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
                   {isGroupChat ? 'Delete Group' : 'Delete Chat'}
                 </button>
@@ -417,6 +550,99 @@ export default function ChatInfoModal({ isOpen, onClose, chat }: ChatInfoModalPr
         </div>
         <div className="modal-backdrop" onClick={onClose}></div>
       </div>
+
+      {/* Add Participant Modal */}
+      <AddParticipantModal
+        isOpen={showAddParticipantModal}
+        onClose={() => setShowAddParticipantModal(false)}
+        chat={chat}
+      />
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg mb-4">
+              {showConfirmDialog.type === 'remove' && 'Remove Participant'}
+              {showConfirmDialog.type === 'promote' && 'Promote to Admin'}
+              {showConfirmDialog.type === 'demote' && 'Demote to Member'}
+              {showConfirmDialog.type === 'leave' && 'Leave Group'}
+              {showConfirmDialog.type === 'delete' && `Delete ${isGroupChat ? 'Group' : 'Chat'}`}
+            </h3>
+
+            <p className="py-4">
+              {showConfirmDialog.type === 'remove' &&
+                `Are you sure you want to remove ${showConfirmDialog.targetUserName} from this group?`}
+              {showConfirmDialog.type === 'promote' &&
+                `Are you sure you want to promote ${showConfirmDialog.targetUserName} to admin?`}
+              {showConfirmDialog.type === 'demote' &&
+                `Are you sure you want to demote ${showConfirmDialog.targetUserName} to member?`}
+              {showConfirmDialog.type === 'leave' && 'Are you sure you want to leave this group?'}
+              {showConfirmDialog.type === 'delete' &&
+                `Are you sure you want to delete this ${
+                  isGroupChat ? 'group' : 'chat'
+                }? This action cannot be undone.`}
+            </p>
+
+            <div className="modal-action">
+              <button
+                className="btn"
+                onClick={() => setShowConfirmDialog(null)}
+                disabled={isManagingParticipants}
+              >
+                Cancel
+              </button>
+              <button
+                className={`btn ${
+                  showConfirmDialog.type === 'delete' ||
+                  showConfirmDialog.type === 'remove' ||
+                  showConfirmDialog.type === 'leave'
+                    ? 'btn-error'
+                    : showConfirmDialog.type === 'demote'
+                    ? 'btn-warning'
+                    : 'btn-success'
+                }`}
+                onClick={() => {
+                  if (showConfirmDialog.type === 'remove' && showConfirmDialog.targetUserId) {
+                    handleRemoveParticipant(showConfirmDialog.targetUserId)
+                  } else if (
+                    showConfirmDialog.type === 'promote' &&
+                    showConfirmDialog.targetUserId
+                  ) {
+                    handlePromoteParticipant(showConfirmDialog.targetUserId)
+                  } else if (
+                    showConfirmDialog.type === 'demote' &&
+                    showConfirmDialog.targetUserId
+                  ) {
+                    handleDemoteAdmin(showConfirmDialog.targetUserId)
+                  } else if (showConfirmDialog.type === 'leave') {
+                    handleLeaveGroup()
+                  } else if (showConfirmDialog.type === 'delete') {
+                    handleDeleteChat()
+                  }
+                }}
+                disabled={isManagingParticipants}
+              >
+                {isManagingParticipants ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {showConfirmDialog.type === 'remove' && 'Remove'}
+                    {showConfirmDialog.type === 'promote' && 'Promote'}
+                    {showConfirmDialog.type === 'demote' && 'Demote'}
+                    {showConfirmDialog.type === 'leave' && 'Leave'}
+                    {showConfirmDialog.type === 'delete' && 'Delete'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => setShowConfirmDialog(null)}></div>
+        </div>
+      )}
 
       {/* Image Preview Modal */}
       {isPreviewOpen && (
