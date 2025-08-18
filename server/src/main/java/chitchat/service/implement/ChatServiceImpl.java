@@ -360,20 +360,20 @@ public class ChatServiceImpl implements ChatService {
 
         List<User> users = userRepository.findAllById(newParticipants);
 
-        String newParticipantNames = users.stream()
-                .map(User::getFullName)
-                .filter(fullName -> !fullName.trim().isEmpty())
-                .collect(Collectors.joining(", "));
+        List<Map<String, String>> newParticipantsData = users.stream()
+                .map(user -> Map.of(
+                        "id", user.getId(),
+                        "fullName", user.getFullName()
+                ))
+                .toList();
 
         // Create and save the system message for adding participants
-        Message addParticipantsMessage = Message.builder()
-                .chatId(chat.getId())
-                .messageType(MessageType.SYSTEM)
-                .content(currentUser.getUser().getFullName()
-                        + " added " + newParticipants.size()
-                        + " new participants: " + newParticipantNames
-                )
-                .build();
+        Message addParticipantsMessage = createSystemMessage(
+                chat.getId(),
+                currentUser.getUser().getId(),
+                SystemMessageAction.ADD_PARTICIPANTS,
+                Map.of("participants", newParticipantsData)
+        );
         messageRepository.save(addParticipantsMessage);
 
         chat.setLastMessageId(addParticipantsMessage.getId());
@@ -458,11 +458,19 @@ public class ChatServiceImpl implements ChatService {
         chat.getParticipants().remove(targetUserId);
         if (targetIsAdmin) chat.getAdmins().remove(targetUserId);
 
-        Message removeParticipantMessage = Message.builder()
-                .chatId(chat.getId())
-                .messageType(MessageType.SYSTEM)
-                .content(currentUser.getUser().getFullName() + " removed " + targetUser.getFullName())
-                .build();
+        List<Map<String, String>> removedParticipants = List.of(
+                Map.of(
+                        "id", targetUserId,
+                        "fullName", targetUser.getFullName()
+                )
+        );
+
+        Message removeParticipantMessage = createSystemMessage(
+                chat.getId(),
+                currentUser.getUser().getId(),
+                SystemMessageAction.REMOVE_PARTICIPANT,
+                Map.of("participants", removedParticipants)
+        );
         messageRepository.save(removeParticipantMessage);
 
         chat.setLastMessageId(removeParticipantMessage.getId());
@@ -511,11 +519,19 @@ public class ChatServiceImpl implements ChatService {
 
         chat.getAdmins().add(targetUserId);
 
-        Message promoteParticipantMessage = Message.builder()
-                .chatId(chat.getId())
-                .messageType(MessageType.SYSTEM)
-                .content(currentUser.getUser().getFullName() + " promoted " + targetUser.getFullName() + " to admin")
-                .build();
+        List<Map<String, String>> promotedParticipants = List.of(
+                Map.of(
+                        "id", targetUserId,
+                        "fullName", targetUser.getFullName()
+                )
+        );
+
+        Message promoteParticipantMessage = createSystemMessage(
+                chat.getId(),
+                currentUser.getUser().getId(),
+                SystemMessageAction.PROMOTE_TO_ADMIN,
+                Map.of("participants", promotedParticipants)
+        );
         messageRepository.save(promoteParticipantMessage);
 
         chat.setLastMessageId(promoteParticipantMessage.getId());
@@ -562,11 +578,19 @@ public class ChatServiceImpl implements ChatService {
 
         chat.getAdmins().remove(targetUserId);
 
-        Message demoteAdminMessage = Message.builder()
-                .chatId(chat.getId())
-                .messageType(MessageType.SYSTEM)
-                .content(currentUser.getUser().getFullName() + " demoted " + targetUser.getFullName() + " to participant")
-                .build();
+        List<Map<String, String>> demotedAdmins = List.of(
+                Map.of(
+                        "id", targetUserId,
+                        "fullName", targetUser.getFullName()
+                )
+        );
+
+        Message demoteAdminMessage = createSystemMessage(
+                chat.getId(),
+                currentUser.getUser().getId(),
+                SystemMessageAction.DEMOTE_FROM_ADMIN,
+                Map.of("participants", demotedAdmins)
+        );
         messageRepository.save(demoteAdminMessage);
 
         chat.setLastMessageId(demoteAdminMessage.getId());
@@ -668,7 +692,6 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    // TODO: enhance this
     public PageResponse<?> getChatMessages(String chatId,
                                            int pageNumber,
                                            int pageSize,
