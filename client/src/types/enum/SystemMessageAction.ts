@@ -7,6 +7,10 @@ export const SystemMessageAction = {
   VIDEO_CALL_JOIN: 'VIDEO_CALL_JOIN',
   VIDEO_CALL_LEAVE: 'VIDEO_CALL_LEAVE',
   VIDEO_CALL_END: 'VIDEO_CALL_END',
+  ADD_PARTICIPANTS: 'ADD_PARTICIPANTS',
+  REMOVE_PARTICIPANT: 'REMOVE_PARTICIPANT',
+  PROMOTE_TO_ADMIN: 'PROMOTE_TO_ADMIN',
+  DEMOTE_FROM_ADMIN: 'DEMOTE_FROM_ADMIN',
 } as const
 
 export type SystemMessageAction = (typeof SystemMessageAction)[keyof typeof SystemMessageAction]

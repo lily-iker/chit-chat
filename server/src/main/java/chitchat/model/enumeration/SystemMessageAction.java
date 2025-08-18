@@ -9,4 +9,8 @@ public enum SystemMessageAction {
     VIDEO_CALL_JOIN,
     VIDEO_CALL_LEAVE,
     VIDEO_CALL_END,
+    ADD_PARTICIPANTS,
+    REMOVE_PARTICIPANT,
+    PROMOTE_TO_ADMIN,
+    DEMOTE_FROM_ADMIN,
 }
