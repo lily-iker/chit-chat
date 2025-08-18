@@ -33,6 +33,7 @@ interface ChatState {
   chatSearchQuery: string
   chatSearchTotalCount: number
   replyingToMessage: Message | null
+  isManagingParticipants: boolean
 
   setSelectedChat: (chat: Chat | null) => void
   getChatById: (chatId: string) => Promise<void>
@@ -66,6 +67,10 @@ interface ChatState {
   loadMoreSearchResults: () => Promise<void>
   clearSearch: () => void
   setReplyingToMessage: (message: Message | null) => void
+  addParticipantsToChat: (chatId: string, userIds: string[]) => Promise<void>
+  removeParticipantFromChat: (chatId: string, targetUserId: string) => Promise<void>
+  promoteParticipantToAdmin: (chatId: string, targetUserId: string) => Promise<void>
+  demoteAdminToParticipant: (chatId: string, targetUserId: string) => Promise<void>
 
   subscribe: (chatId: string) => void
   unsubscribe: () => void
@@ -98,6 +103,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   chatSearchQuery: '',
   chatSearchTotalCount: 0,
   replyingToMessage: null,
+  isManagingParticipants: false,
 
   setSelectedChat: (chat) => {
     // Clear all typing indicators and timeouts when switching chats
@@ -577,6 +583,133 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setReplyingToMessage: (message: Message | null) => {
     set({ replyingToMessage: message })
+  },
+
+  addParticipantsToChat: async (chatId: string, userIds: string[]) => {
+    if (!userIds.length) {
+      toast.error('Please select at least one user to add')
+      return
+    }
+
+    set({ isManagingParticipants: true })
+    try {
+      await axios.post(`/api/v1/chats/${chatId}/add-participants`, userIds)
+
+      // Optimistically update the selected chat participant count
+      set((state) => {
+        if (state.selectedChat && state.selectedChat.id === chatId) {
+          return {
+            selectedChat: {
+              ...state.selectedChat,
+              // participantCount: state.selectedChat.participantCount + userIds.length,
+              // participants: [...state.selectedChat.participants, ...userIds],
+            },
+          }
+        }
+        return state
+      })
+
+      toast.success(
+        `Successfully added ${userIds.length} participant${userIds.length > 1 ? 's' : ''}`
+      )
+    } catch (error: any) {
+      console.error('Failed to add participants:', error)
+      toast.error(error.response?.data?.message || 'Failed to add participants')
+    } finally {
+      set({ isManagingParticipants: false })
+    }
+  },
+
+  removeParticipantFromChat: async (chatId: string, targetUserId: string) => {
+    set({ isManagingParticipants: true })
+    try {
+      await axios.delete(`/api/v1/chats/${chatId}/participants/${targetUserId}`)
+
+      // Optimistically update the selected chat
+      set((state) => {
+        if (state.selectedChat && state.selectedChat.id === chatId) {
+          const updatedAdmins = state.selectedChat.admins?.filter((id) => id !== targetUserId) || []
+          const updatedParticipantsInfo =
+            state.selectedChat.participantsInfo?.filter((p) => p.id !== targetUserId) || []
+
+          return {
+            selectedChat: {
+              ...state.selectedChat,
+              admins: updatedAdmins,
+              participantsInfo: updatedParticipantsInfo,
+            },
+          }
+        }
+        return state
+      })
+
+      toast.success('Participant removed successfully')
+    } catch (error: any) {
+      console.error('Failed to remove participant:', error)
+      toast.error(error.response?.data?.message || 'Failed to remove participant')
+    } finally {
+      set({ isManagingParticipants: false })
+    }
+  },
+
+  promoteParticipantToAdmin: async (chatId: string, targetUserId: string) => {
+    set({ isManagingParticipants: true })
+    try {
+      await axios.put(`/api/v1/chats/${chatId}/participants/${targetUserId}/promote`)
+
+      // Optimistically update the selected chat
+      set((state) => {
+        if (state.selectedChat && state.selectedChat.id === chatId) {
+          const updatedAdmins = [...(state.selectedChat.admins || []), targetUserId]
+
+          return {
+            selectedChat: {
+              ...state.selectedChat,
+              admins: updatedAdmins,
+            },
+          }
+        }
+        return state
+      })
+
+      toast.success('Participant promoted to admin successfully')
+    } catch (error: any) {
+      console.error('Failed to promote participant:', error)
+      toast.error(error.response?.data?.message || 'Failed to promote participant')
+    } finally {
+      set({ isManagingParticipants: false })
+    }
+  },
+
+  demoteAdminToParticipant: async (chatId: string, targetUserId: string) => {
+    set({ isManagingParticipants: true })
+    try {
+      await axios.put(`/api/v1/chats/${chatId}/participants/${targetUserId}/demote`)
+
+      // Optimistically update the selected chat
+      set((state) => {
+        if (state.selectedChat && state.selectedChat.id === chatId) {
+          const updatedAdmins = (state.selectedChat.admins || []).filter(
+            (id) => id !== targetUserId
+          )
+
+          return {
+            selectedChat: {
+              ...state.selectedChat,
+              admins: updatedAdmins,
+            },
+          }
+        }
+        return state
+      })
+
+      toast.success('Admin demoted to participant successfully')
+    } catch (error: any) {
+      console.error('Failed to demote admin:', error)
+      toast.error(error.response?.data?.message || 'Failed to demote admin')
+    } finally {
+      set({ isManagingParticipants: false })
+    }
   },
 
   subscribe: (chatId: string) => {

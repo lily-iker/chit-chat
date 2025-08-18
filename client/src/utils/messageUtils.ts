@@ -10,6 +10,12 @@ export const renderLastSystemMessage = (
 ) => {
   try {
     const parsedContent: SystemMessage = JSON.parse(content ?? '{}')
+
+    const formatNames = (participants: any[] | undefined): string => {
+      if (!participants || participants.length === 0) return 'Unknown'
+      return participants.map((p) => (p.id === authUserId ? 'You' : p.fullName)).join(', ')
+    }
+
     const actorName = parsedContent.actorId === authUserId ? 'You' : senderName
 
     switch (parsedContent.action) {
@@ -29,6 +35,16 @@ export const renderLastSystemMessage = (
         return `${actorName} left the video call`
       case SystemMessageAction.VIDEO_CALL_END:
         return `Video call ended`
+      case SystemMessageAction.ADD_PARTICIPANTS:
+        return `${actorName} added ${formatNames(parsedContent.metadata.participants)} to the chat`
+      case SystemMessageAction.REMOVE_PARTICIPANT:
+        return `${actorName} removed ${formatNames(
+          parsedContent.metadata.participants
+        )} from the chat`
+      case SystemMessageAction.PROMOTE_TO_ADMIN:
+        return `${actorName} promoted ${formatNames(parsedContent.metadata.participants)} to admin`
+      case SystemMessageAction.DEMOTE_FROM_ADMIN:
+        return `${actorName} demoted ${formatNames(parsedContent.metadata.participants)} from admin`
       default:
         return `${actorName} performed an action`
     }
@@ -69,10 +85,66 @@ export const renderSystemMessage = (
         return `${actorName} left the video call`
       case SystemMessageAction.VIDEO_CALL_END:
         return `Video call ended`
+      case SystemMessageAction.ADD_PARTICIPANTS: {
+        const names = formatParticipants(
+          parsedContent.metadata.participants,
+          authUserId,
+          participantsInfo
+        )
+        return `${actorName} added ${names} to the chat`
+      }
+      case SystemMessageAction.REMOVE_PARTICIPANT: {
+        const names = formatParticipants(
+          parsedContent.metadata.participants,
+          authUserId,
+          participantsInfo
+        )
+        return `${actorName} removed ${names} from the chat`
+      }
+      case SystemMessageAction.PROMOTE_TO_ADMIN: {
+        const names = formatParticipants(
+          parsedContent.metadata.participants,
+          authUserId,
+          participantsInfo
+        )
+        return `${actorName} promoted ${names} to admin`
+      }
+      case SystemMessageAction.DEMOTE_FROM_ADMIN: {
+        const names = formatParticipants(
+          parsedContent.metadata.participants,
+          authUserId,
+          participantsInfo
+        )
+        return `${actorName} demoted ${names} from admin`
+      }
       default:
         return `${actorName} performed an action`
     }
   } catch (e) {
     return '[Invalid system message]'
   }
+}
+const formatParticipants = (
+  participants: any[] | undefined,
+  authUserId: string,
+  participantsInfo: ParticipantInfo[] | undefined
+) => {
+  if (!participants || participants.length === 0) return 'Unknown'
+
+  const names = participants.map((p) => {
+    if (p.id === authUserId) return 'you'
+    return participantsInfo?.find((pi) => pi.id === p.id)?.fullName ?? p.fullName ?? 'Unknown'
+  })
+
+  // Move "you" to the front if exists
+  const youIndex = names.indexOf('you')
+  if (youIndex > 0) {
+    names.splice(youIndex, 1)
+    names.unshift('you')
+  }
+
+  // Join with commas and "and" for the last element
+  if (names.length === 1) return names[0]
+  if (names.length === 2) return `${names[0]} and ${names[1]}`
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
 }
