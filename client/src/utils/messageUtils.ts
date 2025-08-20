@@ -13,7 +13,7 @@ export const renderLastSystemMessage = (
 
     const formatNames = (participants: any[] | undefined): string => {
       if (!participants || participants.length === 0) return 'Unknown'
-      return participants.map((p) => (p.id === authUserId ? 'You' : p.fullName)).join(', ')
+      return participants.map((p) => (p.id === authUserId ? 'you' : p.fullName)).join(', ')
     }
 
     const actorName = parsedContent.actorId === authUserId ? 'You' : senderName
