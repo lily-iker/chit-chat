@@ -319,7 +319,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public void addParticipantsToChat(String chatId, List<String> userIds) {
+    public void addParticipantsToChat(String chatId, List<String> userIds) throws Exception {
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
@@ -387,11 +387,13 @@ public class ChatServiceImpl implements ChatService {
 
         // Save chat join info for all new participants
         saveChatJoinInfo(chat, currentUser, newParticipants);
+
+        broadcastParticipantEvent(chat, addParticipantsMessage, currentUser);
     }
 
     @Override
     @Transactional
-    public void removeParticipantFromChat(String chatId, String targetUserId) {
+    public void removeParticipantFromChat(String chatId, String targetUserId) throws Exception {
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
@@ -483,11 +485,13 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.save(chat);
 
         deleteChatJoinInfo(chat, targetUserId);
+
+        broadcastParticipantEvent(chat, removeParticipantMessage, currentUser);
     }
 
     @Override
     @Transactional
-    public void promoteParticipantToAdmin(String chatId, String targetUserId) {
+    public void promoteParticipantToAdmin(String chatId, String targetUserId) throws Exception {
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
@@ -542,11 +546,13 @@ public class ChatServiceImpl implements ChatService {
         chat.setLastMessageTime(promoteParticipantMessage.getCreatedAt());
 
         chatRepository.save(chat);
+
+        broadcastParticipantEvent(chat, promoteParticipantMessage, currentUser);
     }
 
     @Override
     @Transactional
-    public void demoteAdminToParticipant(String chatId, String targetUserId) {
+    public void demoteAdminToParticipant(String chatId, String targetUserId) throws Exception {
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
@@ -601,6 +607,8 @@ public class ChatServiceImpl implements ChatService {
         chat.setLastMessageTime(demoteAdminMessage.getCreatedAt());
 
         chatRepository.save(chat);
+
+        broadcastParticipantEvent(chat, demoteAdminMessage, currentUser);
     }
 
     @Override
@@ -871,8 +879,35 @@ public class ChatServiceImpl implements ChatService {
 
         return Message.builder()
                 .chatId(chatId)
+                .senderId(actorId)
                 .messageType(MessageType.SYSTEM)
                 .content(systemMessageUtils.convertToJson(systemMessage))
                 .build();
     }
+
+    private void broadcastParticipantEvent(Chat chat, Message message, CustomUserDetails currentUser) throws Exception {
+        MessageResponse response = messageMapper.toMessageResponse(message);
+        response.setSenderId(currentUser.getUser().getId());
+        response.setSenderName(currentUser.getUser().getFullName());
+
+        WebSocketResponse<MessageResponse> socketResponse =
+                new WebSocketResponse<>(ChatEvent.NEW_MESSAGE, response);
+
+        // Send to chat topic
+        messagingTemplate.convertAndSend(
+                WebSocketDestination.CHAT_TOPIC_PREFIX + chat.getId(),
+                socketResponse
+        );
+
+        // Send notifications to other participants
+        for (String participantId : chat.getParticipants()) {
+            if (!participantId.equals(currentUser.getUser().getId())) {
+                notificationService.sendNotification(
+                        WebSocketDestination.USER_NOTIFICATION_PREFIX + participantId,
+                        socketResponse
+                );
+            }
+        }
+    }
+
 }

@@ -18,10 +18,10 @@ public interface ChatService {
     ChatResponse getChatOverview(String chatId);
     ChatResponse updateChat(String chatId, UpdateChatRequest updateChatRequest, MultipartFile chatImageFile) throws Exception;
     void deleteChat(String chatId);
-    void addParticipantsToChat(String chatId, List<String> userIds);
-    void removeParticipantFromChat(String chatId, String targetUserId);
-    void promoteParticipantToAdmin(String chatId, String targetUserId);
-    void demoteAdminToParticipant(String chatId, String targetUserId);
+    void addParticipantsToChat(String chatId, List<String> userIds) throws Exception;
+    void removeParticipantFromChat(String chatId, String targetUserId) throws Exception;
+    void promoteParticipantToAdmin(String chatId, String targetUserId) throws Exception;
+    void demoteAdminToParticipant(String chatId, String targetUserId) throws Exception;
     PageResponse<?> getMyChats(int pageNumber, int pageSize, String sortBy, String sortDirection, String beforeChatId);
     PageResponse<?> searchMyChats(String keyword, int pageNumber, int pageSize, String sortBy, String sortDirection);
     PageResponse<?> getChatMessages(String chatId, int pageNumber, int pageSize, String sortBy, String sortDirection, String beforeMessageId);

@@ -79,7 +79,7 @@ public class ChatController {
 
     @PostMapping("/{chatId}/add-participants")
     public ResponseEntity<?> addParticipantsToChat(@PathVariable String chatId,
-                                                   @RequestBody List<String> userIds) {
+                                                   @RequestBody List<String> userIds) throws Exception {
         chatService.addParticipantsToChat(chatId, userIds);
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
@@ -90,7 +90,7 @@ public class ChatController {
 
     @DeleteMapping("/{chatId}/participants/{targetUserId}")
     public ResponseEntity<?> removeParticipantFromChat(@PathVariable String chatId,
-                                                       @PathVariable String targetUserId) {
+                                                       @PathVariable String targetUserId) throws Exception {
         chatService.removeParticipantFromChat(chatId, targetUserId);
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
@@ -101,7 +101,7 @@ public class ChatController {
 
     @PutMapping("/{chatId}/participants/{targetUserId}/promote")
     public ResponseEntity<?> promoteParticipantToAdmin(@PathVariable String chatId,
-                                                       @PathVariable String targetUserId) {
+                                                       @PathVariable String targetUserId) throws Exception {
         chatService.promoteParticipantToAdmin(chatId, targetUserId);
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
@@ -112,7 +112,7 @@ public class ChatController {
 
     @PutMapping("/{chatId}/participants/{targetUserId}/demote")
     public ResponseEntity<?> demoteAdminToParticipant(@PathVariable String chatId,
-                                                      @PathVariable String targetUserId) {
+                                                      @PathVariable String targetUserId) throws Exception {
         chatService.demoteAdminToParticipant(chatId, targetUserId);
         return ResponseEntity.ok(
                 new ApiResponse<>(200,
