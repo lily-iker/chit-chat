@@ -27,6 +27,7 @@ const ChatContainer = () => {
   const lastMarkedMessageId = useRef<string | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const initialLoadComplete = useRef<boolean>(false)
+  const lastChatId = useRef<string | null>(null)
 
   const { containerRef: messagesContainerRef, handleScroll } = useInfiniteScroll({
     hasMore: hasMoreMessages,
@@ -63,21 +64,24 @@ const ChatContainer = () => {
     }
   }, [selectedChatMessages.length])
 
-  // Fetch messages when chat changes
+  // Fetch messages when chat ID changes
   useEffect(() => {
-    if (selectedChat) {
-      initialLoadComplete.current = false
-      getSelectedChatMessages(selectedChat.id).then(() => {
-        // Immediately scroll to bottom after messages are loaded
-        requestAnimationFrame(() => {
-          if (bottomRef.current) {
-            bottomRef.current.scrollIntoView({ behavior: 'auto' })
-            initialLoadComplete.current = true
-          }
-        })
+    const chatId = selectedChat?.id
+    if (!chatId || chatId === lastChatId.current) return
+
+    lastChatId.current = chatId
+    initialLoadComplete.current = false
+
+    getSelectedChatMessages(chatId).then(() => {
+      // Immediately scroll to bottom after messages are loaded
+      requestAnimationFrame(() => {
+        if (bottomRef.current) {
+          bottomRef.current.scrollIntoView({ behavior: 'auto' })
+          initialLoadComplete.current = true
+        }
       })
-    }
-  }, [selectedChat, getSelectedChatMessages])
+    })
+  }, [selectedChat?.id, getSelectedChatMessages])
 
   useEffect(() => {
     if (!selectedChat || !selectedChatMessages.length || !authUser?.id) return
