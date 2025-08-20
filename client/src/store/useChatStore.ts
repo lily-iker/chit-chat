@@ -1,12 +1,13 @@
 import { create } from 'zustand'
 import axios from '@/lib/axios-custom'
 import toast from 'react-hot-toast'
-import type { Chat } from '@/types/Chat'
+import type { Chat, ParticipantInfo } from '@/types/Chat'
 import type { Message } from '@/types/Message'
 import type { IMessage, StompSubscription } from '@stomp/stompjs'
 import { useWebSocketStore } from './useWebSocketStore'
 import { ChatEvent } from '@/types/enum/ChatEvent'
 import type { WebSocketResponse } from '@/types/response/WebSocketResponse'
+import { SystemMessageAction } from '@/types/enum/SystemMessageAction'
 
 interface ChatState {
   selectedChat: Chat | null
@@ -71,6 +72,7 @@ interface ChatState {
   removeParticipantFromChat: (chatId: string, targetUserId: string) => Promise<void>
   promoteParticipantToAdmin: (chatId: string, targetUserId: string) => Promise<void>
   demoteAdminToParticipant: (chatId: string, targetUserId: string) => Promise<void>
+  updateChatParticipants: (chatId: string, action: string, participants: ParticipantInfo[]) => void
 
   subscribe: (chatId: string) => void
   unsubscribe: () => void
@@ -360,6 +362,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
         get().removeTypingUser(message.senderId)
       }
 
+      // ✅ If system message, update participants
+      if (message.messageType === 'SYSTEM' && message.content) {
+        try {
+          const parsedContent = JSON.parse(message.content)
+          const { action, metadata } = parsedContent
+          if (action && metadata?.participants) {
+            get().updateChatParticipants(message.chatId, action, metadata.participants)
+          }
+        } catch (e) {
+          console.error('Failed to parse system message content', e)
+        }
+      }
+
       return {
         selectedChatMessages: [...state.selectedChatMessages, message],
       }
@@ -595,7 +610,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       await axios.post(`/api/v1/chats/${chatId}/add-participants`, userIds)
 
-      // Optimistically update the selected chat participant count
       set((state) => {
         if (state.selectedChat && state.selectedChat.id === chatId) {
           return {
@@ -625,7 +639,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       await axios.delete(`/api/v1/chats/${chatId}/participants/${targetUserId}`)
 
-      // Optimistically update the selected chat
       set((state) => {
         if (state.selectedChat && state.selectedChat.id === chatId) {
           const updatedAdmins = state.selectedChat.admins?.filter((id) => id !== targetUserId) || []
@@ -657,7 +670,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       await axios.put(`/api/v1/chats/${chatId}/participants/${targetUserId}/promote`)
 
-      // Optimistically update the selected chat
       set((state) => {
         if (state.selectedChat && state.selectedChat.id === chatId) {
           const updatedAdmins = [...(state.selectedChat.admins || []), targetUserId]
@@ -686,7 +698,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       await axios.put(`/api/v1/chats/${chatId}/participants/${targetUserId}/demote`)
 
-      // Optimistically update the selected chat
       set((state) => {
         if (state.selectedChat && state.selectedChat.id === chatId) {
           const updatedAdmins = (state.selectedChat.admins || []).filter(
@@ -711,6 +722,67 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ isManagingParticipants: false })
     }
   },
+
+  updateChatParticipants: (chatId, action, participants) =>
+    set((state) => {
+      if (!state.selectedChat || state.selectedChat.id !== chatId) {
+        console.warn('No selectedChat matches chatId:', chatId)
+        return state
+      }
+
+      let updatedParticipants = [...(state.selectedChat.participantsInfo || [])]
+      let updatedAdmins = [...(state.selectedChat.admins || [])]
+
+      switch (action) {
+        case SystemMessageAction.ADD_PARTICIPANTS: {
+          participants.forEach((p) => {
+            if (!updatedParticipants.some((up) => up.id === p.id)) {
+              updatedParticipants.push(p)
+            }
+          })
+          break
+        }
+
+        case SystemMessageAction.REMOVE_PARTICIPANT: {
+          // Remove participant from list
+          updatedParticipants = updatedParticipants.filter(
+            (up) => !participants.some((p) => p.id === up.id)
+          )
+          // Also remove them from admins if they were admin
+          updatedAdmins = updatedAdmins.filter(
+            (adminId) => !participants.some((p) => p.id === adminId)
+          )
+          break
+        }
+
+        case SystemMessageAction.PROMOTE_TO_ADMIN: {
+          participants.forEach((p) => {
+            if (!updatedAdmins.includes(p.id)) {
+              updatedAdmins.push(p.id)
+            }
+          })
+          break
+        }
+
+        case SystemMessageAction.DEMOTE_FROM_ADMIN: {
+          updatedAdmins = updatedAdmins.filter(
+            (adminId) => !participants.some((p) => p.id === adminId)
+          )
+          break
+        }
+
+        default:
+          console.warn('Unhandled action:', action)
+      }
+
+      return {
+        selectedChat: {
+          ...state.selectedChat,
+          participantsInfo: updatedParticipants,
+          admins: updatedAdmins,
+        },
+      }
+    }),
 
   subscribe: (chatId: string) => {
     const { chatSubscription, currentSubscribedChatId } = get()
