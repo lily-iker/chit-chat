@@ -7,28 +7,18 @@ import {
   StreamVideo,
   CallControls,
   SpeakerLayout,
-  useCallStateHooks,
   StreamTheme,
-  CallingState,
 } from '@stream-io/video-react-sdk'
 import '@stream-io/video-react-sdk/dist/css/styles.css'
 import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 const VideoCallContent = () => {
-  const { useCallCallingState } = useCallStateHooks()
-  const callingState = useCallCallingState()
   const { endCall } = useVideoCallStore()
-
-  useEffect(() => {
-    if (callingState === CallingState.LEFT) {
-      endCall()
-    }
-  }, [callingState, endCall])
 
   return (
     <StreamTheme>
       <SpeakerLayout />
-      <CallControls />
+      <CallControls onLeave={endCall} />
     </StreamTheme>
   )
 }

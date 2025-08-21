@@ -2,27 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { X, Maximize2 } from 'lucide-react'
 import { useVideoCallStore } from '@/store/useVideoCall'
 import { useChatStore } from '@/store/useChatStore'
-import {
-  StreamCall,
-  StreamVideo,
-  SpeakerLayout,
-  useCallStateHooks,
-  StreamTheme,
-  CallingState,
-} from '@stream-io/video-react-sdk'
+import { StreamCall, StreamVideo, SpeakerLayout, StreamTheme } from '@stream-io/video-react-sdk'
 import { DEFAULT_PROFILE_IMAGE } from '@/constant/image'
 
 const PiPVideoContent = () => {
-  const { useCallCallingState } = useCallStateHooks()
-  const callingState = useCallCallingState()
-  const { endCall } = useVideoCallStore()
-
-  useEffect(() => {
-    if (callingState === CallingState.LEFT) {
-      endCall()
-    }
-  }, [callingState, endCall])
-
   return (
     <StreamTheme>
       <div className="w-full h-full">
