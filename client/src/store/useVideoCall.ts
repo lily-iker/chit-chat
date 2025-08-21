@@ -201,10 +201,9 @@ export const useVideoCallStore = create<VideoCallState>((set, get) => ({
   },
 
   endCall: () => {
-    const { call, callParticipants } = get()
-    const { selectedChat } = useChatStore.getState()
+    const { call, callParticipants, currentChatId } = get()
 
-    if (!call || !selectedChat) {
+    if (!call || !currentChatId) {
       set({
         call: null,
         isCallActive: false,
@@ -222,13 +221,13 @@ export const useVideoCallStore = create<VideoCallState>((set, get) => ({
 
     useMessageStore
       .getState()
-      .sendVideoCallSystemMessage(SystemMessageAction.VIDEO_CALL_LEAVE, selectedChat.id)
+      .sendVideoCallSystemMessage(SystemMessageAction.VIDEO_CALL_LEAVE, currentChatId)
 
     if (callParticipants.size <= 1) {
       setTimeout(() => {
         useMessageStore
           .getState()
-          .sendVideoCallSystemMessage(SystemMessageAction.VIDEO_CALL_END, selectedChat.id)
+          .sendVideoCallSystemMessage(SystemMessageAction.VIDEO_CALL_END, currentChatId)
       }, 500)
     }
 
