@@ -40,7 +40,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -91,11 +90,14 @@ public class ChatServiceImpl implements ChatService {
 
         // Check if the chat is a private chat
         // If there are only 2 participants, we can consider it a private chat
-        if (createChatRequest.getParticipants().size() == 2) {
-            Optional<Chat> existingPrivateChatOpt = chatRepository.findPrivateChatByParticipants(createChatRequest.getParticipants());
+        if (createChatRequest.getParticipants().size() == PRIVATE_CHAT_PARTICIPANTS) {
+            Optional<Chat> existingPrivateChatOpt = chatRepository
+                    .findPrivateChatByParticipants(createChatRequest.getParticipants());
 
             if (existingPrivateChatOpt.isPresent()) {
-                return chatMapper.toChatResponse(currentUser, existingPrivateChatOpt.get());
+                ChatResponse chatResponse = chatMapper.toChatResponse(currentUser, existingPrivateChatOpt.get());
+                chatResponse.setNewlyCreated(false);
+                return chatResponse;
             }
             else {
                 Chat newPrivateChat = Chat.builder()
@@ -118,6 +120,15 @@ public class ChatServiceImpl implements ChatService {
                         .content(jsonContent)
                         .build();
                 messageRepository.save(initMessage);
+
+                MessageReadInfo messageReadInfo = MessageReadInfo.builder()
+                        .chatId(newPrivateChat.getId())
+                        .messageId(initMessage.getId())
+                        .userId(currentUser.getUser().getId())
+                        .readAt(Instant.now())
+                        .build();
+
+                messageReadInfoRepository.save(messageReadInfo);
 
                 updateChatLastMessage(newPrivateChat, initMessage, currentUser.getUser());
 
@@ -161,6 +172,15 @@ public class ChatServiceImpl implements ChatService {
                 .content(jsonContent)
                 .build();
         messageRepository.save(initMessage);
+
+        MessageReadInfo messageReadInfo = MessageReadInfo.builder()
+                .chatId(newGroupChat.getId())
+                .messageId(initMessage.getId())
+                .userId(currentUser.getUser().getId())
+                .readAt(Instant.now())
+                .build();
+
+        messageReadInfoRepository.save(messageReadInfo);
 
         updateChatLastMessage(newGroupChat, initMessage, currentUser.getUser());
 

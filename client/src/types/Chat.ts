@@ -20,6 +20,7 @@ export interface Chat {
   participantsInfo?: ParticipantInfo[]
   unreadMessageCount?: number | null
   typingParticipants?: string[]
+  newlyCreated?: boolean
 }
 
 export interface ParticipantInfo {

@@ -145,7 +145,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   getChats: async () => {
     set({ isChatsLoading: true })
     try {
-      const res = await axios.get('/api/v1/chats/my-chats')
+      const res = await axios.get('/api/v1/chats/my-chats?pageSize=10')
       const data = res.data.result
       console.log('Fetched chats:', data)
 
@@ -191,11 +191,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const newChat = res.data.result as Chat
 
-      set((state) => ({
-        chats: [newChat, ...state.chats],
-      }))
+      set((state) => {
+        const existingIndex = state.chats.findIndex((c) => c.id === newChat.id)
+        let updatedChats = [...state.chats]
 
-      toast.success('Chat created successfully')
+        if (existingIndex !== -1) {
+          updatedChats.splice(existingIndex, 1) // remove old position
+        }
+
+        // always move to top
+        updatedChats = [newChat, ...updatedChats]
+
+        if (newChat.newlyCreated == false) {
+          toast.success('Chat already exists, moved to top')
+        } else {
+          toast.success('Chat created successfully')
+        }
+
+        return { chats: updatedChats }
+      })
     } catch (error: any) {
       console.error('Failed to create chat:', error)
       toast.error(error.response?.data?.message || 'Failed to create chat')
@@ -276,15 +290,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
         typingParticipants: chat.typingParticipants ?? [],
       }))
 
-      set((state) => ({
-        chats: [...state.chats, ...normalizedChats],
-        hasMoreChats: data.pageNumber < data.totalPages,
-        isLoadingMoreChats: false,
-        oldestLoadedChatId:
-          data.content.length > 0
-            ? data.content[data.content.length - 1].id
-            : state.oldestLoadedChatId,
-      }))
+      set((state) => {
+        const existingIds = new Set(state.chats.map((c) => c.id))
+        const filteredChats = normalizedChats.filter((chat: Chat) => !existingIds.has(chat.id))
+
+        return {
+          chats: [...state.chats, ...filteredChats],
+          hasMoreChats: data.pageNumber < data.totalPages,
+          isLoadingMoreChats: false,
+          oldestLoadedChatId:
+            data.content.length > 0
+              ? data.content[data.content.length - 1].id
+              : state.oldestLoadedChatId,
+        }
+      })
     } catch (error) {
       console.error(error)
       toast.error('Failed to load more chats')

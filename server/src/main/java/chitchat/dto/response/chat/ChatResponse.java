@@ -31,4 +31,5 @@ public class ChatResponse {
     private String createdBy;
     private List<ChatParticipantInfoResponse> participantsInfo;
     private Integer unreadMessageCount;
+    private Boolean newlyCreated;
 }
