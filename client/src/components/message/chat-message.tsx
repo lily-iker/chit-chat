@@ -120,7 +120,14 @@ export default function ChatMessage({
           )}
 
           {message.isEdited && !message.isDeleted && (
-            <div className={`text-xs italic text-base-content/50 mb-1 px-1`}>(edited)</div>
+            <div
+              className={`text-xs italic text-base-content/50 mb-1 px-1 tooltip ${
+                isMyMessage ? 'tooltip-left' : 'tooltip-right'
+              }`}
+              data-tip={`Edited at ${formatMessageTime(message.updatedAt)}`}
+            >
+              (edited)
+            </div>
           )}
 
           {/* Reply Preview */}
