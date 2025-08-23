@@ -63,7 +63,8 @@ interface ChatState {
   sendTypingEvent: (chatId: string, userId: string) => void
   addTypingUser: (userId: string) => void
   removeTypingUser: (userId: string) => void
-  updateSelectedChatOrder: (message: Message, isDelete: boolean) => void
+  updateSelectedChatOrderForNewMessage: (message: Message) => void
+  updateSelectedChatOrderIfLastMessage: (message: Message, isDelete: boolean) => void
   searchChats: (query: string, reset?: boolean) => Promise<void>
   loadMoreSearchResults: () => Promise<void>
   clearSearch: () => void
@@ -519,7 +520,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })
   },
 
-  updateSelectedChatOrder: (message: Message, isDelete: boolean) => {
+  updateSelectedChatOrderForNewMessage: (message: Message) => {
     useChatStore.setState((state) => {
       const updatedChats = [...state.chats]
       const chatIndex = updatedChats.findIndex((chat) => chat.id === get().selectedChat?.id)
@@ -529,13 +530,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         const updatedChat = {
           ...chat,
+          lastMessageId: message.id,
           lastMessageContent: message.content,
           lastMessageSenderId: message.senderId,
           lastMessageSenderName: message.senderName,
           lastMessageTime: message.createdAt,
           lastMessageType: message.messageType,
           lastMessageMediaUrl: message.mediaUrl,
-          isLastMessageDeleted: isDelete ? true : false,
+          isLastMessageDeleted: false,
         }
 
         updatedChats.splice(chatIndex, 1)
@@ -546,6 +548,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
 
+      return {}
+    })
+  },
+
+  updateSelectedChatOrderIfLastMessage: (message: Message, isDelete: boolean) => {
+    useChatStore.setState((state) => {
+      const updatedChats = [...state.chats]
+      const chatIndex = updatedChats.findIndex((chat) => chat.id === get().selectedChat?.id)
+
+      if (chatIndex !== -1) {
+        const chat = updatedChats[chatIndex]
+
+        // only update if message is the last message
+        if (chat.lastMessageId === message.id) {
+          updatedChats[chatIndex] = {
+            ...chat,
+            lastMessageContent: message.content,
+            lastMessageSenderId: message.senderId,
+            lastMessageTime: message.createdAt,
+            lastMessageType: message.messageType,
+            lastMessageMediaUrl: message.mediaUrl,
+            isLastMessageDeleted: isDelete,
+          }
+
+          return { chats: updatedChats }
+        }
+      }
       return {}
     })
   },
@@ -833,17 +862,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         case ChatEvent.NEW_MESSAGE:
           get().addMessage(data)
-          get().updateSelectedChatOrder(data, false)
+          get().updateSelectedChatOrderForNewMessage(data)
           break
 
         case ChatEvent.MESSAGE_EDITED:
           get().updateMessage(data)
-          get().updateSelectedChatOrder(data, false)
+          get().updateSelectedChatOrderIfLastMessage(data, false)
           break
 
         case ChatEvent.MESSAGE_DELETED:
           get().deleteMessage(data.id)
-          get().updateSelectedChatOrder(data, true)
+          get().updateSelectedChatOrderIfLastMessage(data, true)
           break
 
         default:
