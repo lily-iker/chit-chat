@@ -1,6 +1,7 @@
 package chitchat.mapper;
 
 import chitchat.dto.response.user.UserInfoResponse;
+import chitchat.dto.response.user.UserOverviewResponse;
 import chitchat.dto.response.user.UserProfileResponse;
 import chitchat.dto.response.user.UserSearchResponse;
 import chitchat.model.User;
@@ -41,8 +42,8 @@ public class UserMapper {
                 .build();
     }
 
-    public UserSearchResponse toUserSearchResponse(User user) {
-        return UserSearchResponse.builder()
+    public UserOverviewResponse toUserOverviewResponse(User user) {
+        return UserOverviewResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .profileImageUrl(mediaUtils.resolveMediaUrl(user.getProfileImageUrl()))
